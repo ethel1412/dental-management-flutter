@@ -109,7 +109,7 @@ class _LabRegistrationScreenState extends State<LabRegistrationScreen> {
       'lab_name': _labNameController.text.trim(),
       'lab_type': _selectedLabType,
       'owner_name': _ownerNameController.text.trim(),
-      'lab_address': _addressController.text.trim(),
+      'address': _addressController.text.trim(),
       'city': _cityController.text.trim(),
       'state': _stateController.text.trim(),
       'pincode': _pincodeController.text.trim(),
