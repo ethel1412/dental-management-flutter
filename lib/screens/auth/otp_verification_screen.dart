@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../providers/auth_provider.dart';
@@ -13,9 +14,13 @@ import '../lab/lab_dashboard_screen.dart';
 class OTPVerificationScreen extends StatefulWidget {
   final String mobileNumber;
 
+  /// DEV ONLY: when provided, the OTP field is pre-filled and a debug banner is shown.
+  final String? prefillOtp;
+
   const OTPVerificationScreen({
     super.key,
     required this.mobileNumber,
+    this.prefillOtp,
   });
 
   @override
@@ -24,7 +29,16 @@ class OTPVerificationScreen extends StatefulWidget {
 
 class _OTPVerificationScreenState extends State<OTPVerificationScreen> {
   final _formKey = GlobalKey<FormState>();
-  final _otpController = TextEditingController();
+  late final TextEditingController _otpController;
+
+  @override
+  void initState() {
+    super.initState();
+    // Pre-fill OTP in debug mode
+    _otpController = TextEditingController(
+      text: (kDebugMode && widget.prefillOtp != null) ? widget.prefillOtp : '',
+    );
+  }
 
   @override
   void dispose() {
@@ -66,7 +80,7 @@ class _OTPVerificationScreenState extends State<OTPVerificationScreen> {
       Navigator.pushAndRemoveUntil(
         context,
         MaterialPageRoute(builder: (_) => screen),
-            (route) => false,
+        (route) => false,
       );
     } else {
       Helpers.showToast(
@@ -84,6 +98,10 @@ class _OTPVerificationScreenState extends State<OTPVerificationScreen> {
 
     if (success) {
       Helpers.showToast('OTP sent successfully!');
+      // DEV: update the pre-filled OTP field with the new OTP
+      if (kDebugMode && authProvider.devOtp != null) {
+        _otpController.text = authProvider.devOtp!;
+      }
     } else {
       Helpers.showToast(
         authProvider.error ?? 'Failed to send OTP',
@@ -131,7 +149,36 @@ class _OTPVerificationScreenState extends State<OTPVerificationScreen> {
                     color: AppConstants.textSecondaryColor,
                   ),
                 ),
-                const SizedBox(height: 40),
+                const SizedBox(height: 16),
+
+                // DEV ONLY: amber banner showing the pre-filled OTP
+                if (kDebugMode && widget.prefillOtp != null)
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                    margin: const EdgeInsets.only(bottom: 16),
+                    decoration: BoxDecoration(
+                      color: Colors.amber.shade100,
+                      borderRadius: BorderRadius.circular(8),
+                      border: Border.all(color: Colors.amber.shade400),
+                    ),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        const Icon(Icons.developer_mode, color: Colors.orange, size: 18),
+                        const SizedBox(width: 8),
+                        Text(
+                          'DEV OTP: ${widget.prefillOtp}',
+                          style: const TextStyle(
+                            fontSize: 18,
+                            fontWeight: FontWeight.bold,
+                            letterSpacing: 4,
+                            color: Colors.orange,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+
                 CustomTextField(
                   label: 'OTP',
                   hint: 'Enter 6-digit OTP',

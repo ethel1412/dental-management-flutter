@@ -14,6 +14,9 @@ class AuthProvider with ChangeNotifier {
   int? _userId;
   Map<String, dynamic>? _userData;
 
+  // DEV: stores the last OTP returned by the server
+  String? _devOtp;
+
   // Getters
   bool get isLoading => _isLoading;
   String? get error => _error;
@@ -21,6 +24,7 @@ class AuthProvider with ChangeNotifier {
   String? get userRole => _userRole;
   int? get userId => _userId;
   Map<String, dynamic>? get userData => _userData;
+  String? get devOtp => _devOtp;
 
   // Check login status on app start
   Future<void> checkLoginStatus() async {
@@ -42,10 +46,13 @@ class AuthProvider with ChangeNotifier {
       ) async {
     _isLoading = true;
     _error = null;
+    _devOtp = null;
     notifyListeners();
 
     try {
-      await _authService.register(mobileNumber, password, role, email);
+      final response = await _authService.register(mobileNumber, password, role, email);
+      // DEV: capture OTP from response
+      _devOtp = response['otp']?.toString();
       _isLoading = false;
       notifyListeners();
       return true;
@@ -61,10 +68,13 @@ class AuthProvider with ChangeNotifier {
   Future<bool> login(String mobileNumber, String password) async {
     _isLoading = true;
     _error = null;
+    _devOtp = null;
     notifyListeners();
 
     try {
-      await _authService.login(mobileNumber, password);
+      final response = await _authService.login(mobileNumber, password);
+      // DEV: capture OTP from response
+      _devOtp = response['otp']?.toString();
       _isLoading = false;
       notifyListeners();
       return true;
@@ -107,10 +117,13 @@ class AuthProvider with ChangeNotifier {
   Future<bool> resendOTP(String mobileNumber) async {
     _isLoading = true;
     _error = null;
+    _devOtp = null;
     notifyListeners();
 
     try {
-      await _authService.resendOTP(mobileNumber);
+      final response = await _authService.resendOTP(mobileNumber);
+      // DEV: capture new OTP from resend response
+      _devOtp = response['otp']?.toString();
       _isLoading = false;
       notifyListeners();
       return true;
@@ -130,10 +143,12 @@ class AuthProvider with ChangeNotifier {
       ) async {
     _isLoading = true;
     _error = null;
+    _devOtp = null;
     notifyListeners();
 
     try {
-      await _authService.registerDoctor(data, dciCertificate, profileImage);
+      final response = await _authService.registerDoctor(data, dciCertificate, profileImage);
+      _devOtp = response['otp']?.toString();
       _isLoading = false;
       notifyListeners();
       return true;
@@ -152,10 +167,12 @@ class AuthProvider with ChangeNotifier {
       ) async {
     _isLoading = true;
     _error = null;
+    _devOtp = null;
     notifyListeners();
 
     try {
-      await _authService.registerPatient(data, profileImage);
+      final response = await _authService.registerPatient(data, profileImage);
+      _devOtp = response['otp']?.toString();
       _isLoading = false;
       notifyListeners();
       return true;
@@ -175,10 +192,12 @@ class AuthProvider with ChangeNotifier {
       ) async {
     _isLoading = true;
     _error = null;
+    _devOtp = null;
     notifyListeners();
 
     try {
-      await _authService.registerLab(data, registrationCertificate, labImage);
+      final response = await _authService.registerLab(data, registrationCertificate, labImage);
+      _devOtp = response['otp']?.toString();
       _isLoading = false;
       notifyListeners();
       return true;
@@ -198,6 +217,7 @@ class AuthProvider with ChangeNotifier {
     _userId = null;
     _userData = null;
     _error = null;
+    _devOtp = null;
     notifyListeners();
   }
 
