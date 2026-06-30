@@ -10,8 +10,10 @@ class PatientDashboardScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final user = context.watch<AuthProvider>().currentUser;
-    final name = user?.name ?? 'Patient';
+    final userData = context.watch<AuthProvider>().userData;
+    final name = userData?['name'] as String? ??
+        userData?['full_name'] as String? ??
+        'Patient';
 
     return Scaffold(
       backgroundColor: const Color(0xFFF8F9FF),
@@ -92,7 +94,7 @@ class PatientDashboardScreen extends StatelessWidget {
 
               const SizedBox(height: 20),
 
-              // AI X-ray CTA  ─  the FEATURED action
+              // AI X-ray CTA  —  the FEATURED action
               _buildXrayCta(context),
 
               const SizedBox(height: 16),
