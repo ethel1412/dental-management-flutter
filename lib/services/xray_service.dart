@@ -28,14 +28,17 @@ class ToothResult {
 
   factory ToothResult.fromJson(Map<String, dynamic> j) => ToothResult(
         fdiNumber: j['fdi_number'] as int? ?? 0,
-        detectionConfidence: (j['detection_confidence'] as num?)?.toDouble() ?? 0,
+        detectionConfidence:
+            (j['detection_confidence'] as num?)?.toDouble() ?? 0,
         disease: j['disease'] as String? ?? 'Unknown',
-        diseaseConfidence: (j['disease_confidence'] as num?)?.toDouble() ?? 0,
+        diseaseConfidence:
+            (j['disease_confidence'] as num?)?.toDouble() ?? 0,
         severity: j['severity'] as String? ?? 'unknown',
         advice: j['advice'] as String? ?? '',
-        boundingBox: Map<String, dynamic>.from(j['bounding_box'] as Map? ?? {}),
-        diseaseProbabilities:
-            Map<String, dynamic>.from(j['disease_probabilities'] as Map? ?? {}),
+        boundingBox:
+            Map<String, dynamic>.from(j['bounding_box'] as Map? ?? {}),
+        diseaseProbabilities: Map<String, dynamic>.from(
+            j['disease_probabilities'] as Map? ?? {}),
       );
 }
 
@@ -60,8 +63,8 @@ class XraySummary {
         healthyTeeth: j['healthy_teeth'] as int? ?? 0,
         diseasedTeeth: j['diseased_teeth'] as int? ?? 0,
         overallStatus: j['overall_status'] as String? ?? 'unknown',
-        diseaseBreakdown:
-            Map<String, dynamic>.from(j['disease_breakdown'] as Map? ?? {}),
+        diseaseBreakdown: Map<String, dynamic>.from(
+            j['disease_breakdown'] as Map? ?? {}),
       );
 }
 
@@ -81,7 +84,8 @@ class XrayAnalysisResult {
     this.errorMessage,
   });
 
-  factory XrayAnalysisResult.fromJson(Map<String, dynamic> j) => XrayAnalysisResult(
+  factory XrayAnalysisResult.fromJson(Map<String, dynamic> j) =>
+      XrayAnalysisResult(
         status: j['status'] as String? ?? 'error',
         summary: j['summary'] != null
             ? XraySummary.fromJson(j['summary'] as Map<String, dynamic>)
@@ -100,28 +104,43 @@ class XrayService {
   final StorageService _storage = StorageService();
 
   Future<XrayAnalysisResult> analyzeXray(File imageFile) async {
+    // Always fetch token first — fail fast if not logged in
     final token = await _storage.getToken();
-    final uri = Uri.parse('${ApiConfig.baseUrl}/api/ml-analysis/analyze-xray');
-
-    final request = http.MultipartRequest('POST', uri);
-    if (token != null) {
-      request.headers['Authorization'] = 'Bearer $token';
+    if (token == null || token.isEmpty) {
+      return const XrayAnalysisResult(
+        status: 'error',
+        teeth: [],
+        errorMessage: 'Not authenticated. Please log out and log in again.',
+      );
     }
-    request.files.add(await http.MultipartFile.fromPath('file', imageFile.path));
+
+    final uri = Uri.parse('${ApiConfig.baseUrl}${ApiConfig.analyzeXray}');
+
+    final request = http.MultipartRequest('POST', uri)
+      ..headers['Authorization'] = 'Bearer $token'
+      ..headers['Accept'] = 'application/json';
+
+    request.files
+        .add(await http.MultipartFile.fromPath('file', imageFile.path));
 
     try {
-      final streamed = await request.send().timeout(const Duration(seconds: 120));
+      final streamed =
+          await request.send().timeout(const Duration(seconds: 120));
       final response = await http.Response.fromStream(streamed);
 
       if (response.statusCode >= 200 && response.statusCode < 300) {
         final json = jsonDecode(response.body) as Map<String, dynamic>;
         return XrayAnalysisResult.fromJson(json);
       } else {
-        final err = jsonDecode(response.body);
+        Map<String, dynamic> err = {};
+        try {
+          err = jsonDecode(response.body) as Map<String, dynamic>;
+        } catch (_) {}
         return XrayAnalysisResult(
           status: 'error',
           teeth: [],
-          errorMessage: err['detail']?.toString() ?? 'Server error ${response.statusCode}',
+          errorMessage: err['detail']?.toString() ??
+              'Server error ${response.statusCode}',
         );
       }
     } catch (e) {
