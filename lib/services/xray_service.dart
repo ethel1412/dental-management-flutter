@@ -2,6 +2,8 @@ import 'dart:convert';
 import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
+import 'package:http_parser/http_parser.dart';
+import 'package:path/path.dart' as p;
 import '../config/api_config.dart';
 import 'storage_service.dart';
 
@@ -101,6 +103,22 @@ class XrayAnalysisResult {
   bool get hasIssues => (summary?.diseasedTeeth ?? 0) > 0;
 }
 
+/// Derive a MIME type from the file extension.
+MediaType _mediaTypeFromPath(String filePath) {
+  final ext = p.extension(filePath).toLowerCase();
+  switch (ext) {
+    case '.jpg':
+    case '.jpeg':
+      return MediaType('image', 'jpeg');
+    case '.png':
+      return MediaType('image', 'png');
+    case '.webp':
+      return MediaType('image', 'webp');
+    default:
+      return MediaType('image', 'jpeg'); // safe default for X-rays
+  }
+}
+
 class XrayService {
   final StorageService _storage = StorageService();
 
@@ -120,13 +138,19 @@ class XrayService {
     }
 
     final uri = Uri.parse('${ApiConfig.baseUrl}${ApiConfig.analyzeXray}');
+    final contentType = _mediaTypeFromPath(imageFile.path);
 
     final request = http.MultipartRequest('POST', uri)
       ..headers['Authorization'] = 'Bearer $token'
       ..headers['Accept'] = 'application/json';
 
-    request.files
-        .add(await http.MultipartFile.fromPath('file', imageFile.path));
+    request.files.add(
+      await http.MultipartFile.fromPath(
+        'file',
+        imageFile.path,
+        contentType: contentType,
+      ),
+    );
 
     try {
       final streamed =
