@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'dart:io';
+import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 import '../config/api_config.dart';
 import 'storage_service.dart';
@@ -104,8 +105,12 @@ class XrayService {
   final StorageService _storage = StorageService();
 
   Future<XrayAnalysisResult> analyzeXray(File imageFile) async {
-    // Always fetch token first — fail fast if not logged in
     final token = await _storage.getToken();
+
+    // DEBUG — remove before release
+    debugPrint('🔑 TOKEN: ${token != null ? '${token.substring(0, token.length > 20 ? 20 : token.length)}...' : 'NULL — not logged in!'}');
+    debugPrint('🌐 URL: ${ApiConfig.baseUrl}${ApiConfig.analyzeXray}');
+
     if (token == null || token.isEmpty) {
       return const XrayAnalysisResult(
         status: 'error',
@@ -128,6 +133,11 @@ class XrayService {
           await request.send().timeout(const Duration(seconds: 120));
       final response = await http.Response.fromStream(streamed);
 
+      debugPrint('📡 Response status: ${response.statusCode}');
+      if (response.statusCode != 200) {
+        debugPrint('🚨 Error body: ${response.body}');
+      }
+
       if (response.statusCode >= 200 && response.statusCode < 300) {
         final json = jsonDecode(response.body) as Map<String, dynamic>;
         return XrayAnalysisResult.fromJson(json);
@@ -144,6 +154,7 @@ class XrayService {
         );
       }
     } catch (e) {
+      debugPrint('🚨 Exception: $e');
       return XrayAnalysisResult(
         status: 'error',
         teeth: [],
