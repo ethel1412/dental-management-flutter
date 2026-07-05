@@ -197,7 +197,7 @@ class _XrayAnalysisScreenState extends State<XrayAnalysisScreen>
                       SizedBox(height: 2),
                       Text('Panoramic or periapical X-ray',
                           style:
-                              TextStyle(fontSize: 13, color: Colors.grey)),
+                          TextStyle(fontSize: 13, color: Colors.grey)),
                     ],
                   ),
                 ),
@@ -221,24 +221,24 @@ class _XrayAnalysisScreenState extends State<XrayAnalysisScreen>
                 ),
                 child: _selectedImage == null
                     ? Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Icon(Icons.add_photo_alternate_outlined,
-                              size: 60,
-                              color: AppConstants.primaryColor.withOpacity(0.5)),
-                          const SizedBox(height: 10),
-                          Text('Tap to select X-ray image',
-                              style: TextStyle(
-                                  color: AppConstants.primaryColor
-                                      .withOpacity(0.7),
-                                  fontSize: 15)),
-                        ],
-                      )
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(Icons.add_photo_alternate_outlined,
+                        size: 60,
+                        color: AppConstants.primaryColor.withOpacity(0.5)),
+                    const SizedBox(height: 10),
+                    Text('Tap to select X-ray image',
+                        style: TextStyle(
+                            color: AppConstants.primaryColor
+                                .withOpacity(0.7),
+                            fontSize: 15)),
+                  ],
+                )
                     : ClipRRect(
-                        borderRadius: BorderRadius.circular(10),
-                        child: Image.file(_selectedImage!,
-                            fit: BoxFit.contain, width: double.infinity),
-                      ),
+                  borderRadius: BorderRadius.circular(10),
+                  child: Image.file(_selectedImage!,
+                      fit: BoxFit.contain, width: double.infinity),
+                ),
               ),
             ),
 
@@ -264,9 +264,9 @@ class _XrayAnalysisScreenState extends State<XrayAnalysisScreen>
                 Expanded(
                   child: ElevatedButton.icon(
                     onPressed:
-                        (_selectedImage != null && _state != _AnalysisState.analyzing)
-                            ? _analyze
-                            : null,
+                    (_selectedImage != null && _state != _AnalysisState.analyzing)
+                        ? _analyze
+                        : null,
                     icon: const Icon(Icons.search),
                     label: const Text('Analyze'),
                     style: ElevatedButton.styleFrom(
@@ -381,7 +381,7 @@ class _XrayAnalysisScreenState extends State<XrayAnalysisScreen>
             LinearProgressIndicator(
               backgroundColor: AppConstants.primaryColor.withOpacity(0.1),
               valueColor:
-                  AlwaysStoppedAnimation<Color>(AppConstants.primaryColor),
+              AlwaysStoppedAnimation<Color>(AppConstants.primaryColor),
             ),
           ],
         ),
@@ -433,6 +433,10 @@ class _XrayAnalysisScreenState extends State<XrayAnalysisScreen>
         const SizedBox(height: 12),
         if (r.annotatedImageBase64 != null) _buildAnnotatedImageCard(r.annotatedImageBase64!),
         const SizedBox(height: 12),
+        _buildAgeEstimateCard(s),
+        const SizedBox(height: 12),
+        _buildToothTypeCard(s),
+        const SizedBox(height: 12),
         _buildDiseaseBreakdownCard(s),
         const SizedBox(height: 12),
         _buildTeethListCard(r.teeth),
@@ -469,7 +473,7 @@ class _XrayAnalysisScreenState extends State<XrayAnalysisScreen>
                 const SizedBox(width: 10),
                 const Text('Analysis Summary',
                     style:
-                        TextStyle(fontSize: 17, fontWeight: FontWeight.bold)),
+                    TextStyle(fontSize: 17, fontWeight: FontWeight.bold)),
               ],
             ),
             const SizedBox(height: 16),
@@ -523,9 +527,9 @@ class _XrayAnalysisScreenState extends State<XrayAnalysisScreen>
 
   Widget _statBadge(
       {required String label,
-      required String value,
-      required Color color,
-      required IconData icon}) {
+        required String value,
+        required Color color,
+        required IconData icon}) {
     return Column(
       children: [
         Container(
@@ -604,17 +608,17 @@ class _XrayAnalysisScreenState extends State<XrayAnalysisScreen>
       runSpacing: 6,
       children: items
           .map((e) => Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Container(
-                      width: 12,
-                      height: 12,
-                      decoration: BoxDecoration(
-                          color: e.$2, borderRadius: BorderRadius.circular(3))),
-                  const SizedBox(width: 4),
-                  Text(e.$1, style: const TextStyle(fontSize: 11)),
-                ],
-              ))
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Container(
+              width: 12,
+              height: 12,
+              decoration: BoxDecoration(
+                  color: e.$2, borderRadius: BorderRadius.circular(3))),
+          const SizedBox(width: 4),
+          Text(e.$1, style: const TextStyle(fontSize: 11)),
+        ],
+      ))
           .toList(),
     );
   }
@@ -636,7 +640,7 @@ class _XrayAnalysisScreenState extends State<XrayAnalysisScreen>
                 SizedBox(width: 8),
                 Text('Findings Breakdown',
                     style:
-                        TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+                    TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
               ],
             ),
             const SizedBox(height: 12),
@@ -715,7 +719,7 @@ class _XrayAnalysisScreenState extends State<XrayAnalysisScreen>
                   selected: _showDiseased,
                   onSelected: (v) => setState(() => _showDiseased = v),
                   selectedColor:
-                      AppConstants.primaryColor.withOpacity(0.15),
+                  AppConstants.primaryColor.withOpacity(0.15),
                   checkmarkColor: AppConstants.primaryColor,
                   labelStyle: TextStyle(
                     fontSize: 12,
@@ -769,28 +773,42 @@ class _XrayAnalysisScreenState extends State<XrayAnalysisScreen>
         t.disease,
         style: TextStyle(fontWeight: FontWeight.w600, color: color),
       ),
-      subtitle: Row(
+      subtitle: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Container(
-            padding:
-                const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-            decoration: BoxDecoration(
-              color: severityColor.withOpacity(0.12),
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: severityColor.withOpacity(0.4)),
-            ),
-            child: Text(
-              t.severity.toUpperCase(),
-              style: TextStyle(
-                  fontSize: 10,
-                  color: severityColor,
-                  fontWeight: FontWeight.bold),
-            ),
-          ),
-          const SizedBox(width: 8),
+          const SizedBox(height: 3),
           Text(
-            '${(t.diseaseConfidence * 100).toStringAsFixed(0)}% confidence',
-            style: const TextStyle(fontSize: 12, color: Colors.grey),
+            t.toothType,
+            style: const TextStyle(
+                fontSize: 12,
+                color: Colors.black54,
+                fontWeight: FontWeight.w500),
+          ),
+          const SizedBox(height: 4),
+          Row(
+            children: [
+              Container(
+                padding:
+                const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                decoration: BoxDecoration(
+                  color: severityColor.withOpacity(0.12),
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: severityColor.withOpacity(0.4)),
+                ),
+                child: Text(
+                  t.severity.toUpperCase(),
+                  style: TextStyle(
+                      fontSize: 10,
+                      color: severityColor,
+                      fontWeight: FontWeight.bold),
+                ),
+              ),
+              const SizedBox(width: 8),
+              Text(
+                '${(t.diseaseConfidence * 100).toStringAsFixed(0)}% confidence',
+                style: const TextStyle(fontSize: 12, color: Colors.grey),
+              ),
+            ],
           ),
         ],
       ),
@@ -819,6 +837,176 @@ class _XrayAnalysisScreenState extends State<XrayAnalysisScreen>
     );
   }
 
+  // ── Age estimate card ─────────────────────────────────────────────
+  Widget _buildAgeEstimateCard(XraySummary s) {
+    final age = s.ageEstimate;
+    if (age.isEmpty) return const SizedBox.shrink();
+    final range = age['age_range'] as String? ?? 'Undetermined';
+    final basis = age['basis'] as String? ?? '';
+    final isDetermined = range != 'Undetermined';
+    return Card(
+      elevation: 3,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Icon(Icons.person_search_outlined,
+                    color: AppConstants.primaryColor, size: 22),
+                const SizedBox(width: 8),
+                const Text('Estimated Dental Age',
+                    style:
+                    TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+              ],
+            ),
+            const SizedBox(height: 14),
+            Center(
+              child: Container(
+                padding:
+                const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                decoration: BoxDecoration(
+                  color: AppConstants.primaryColor.withOpacity(0.08),
+                  borderRadius: BorderRadius.circular(30),
+                  border: Border.all(
+                      color: AppConstants.primaryColor.withOpacity(0.3)),
+                ),
+                child: Text(
+                  range,
+                  style: TextStyle(
+                      fontSize: 20,
+                      fontWeight: FontWeight.bold,
+                      color: AppConstants.primaryColor),
+                ),
+              ),
+            ),
+            if (basis.isNotEmpty) ...[
+              const SizedBox(height: 10),
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Icon(Icons.info_outline,
+                      size: 16, color: Colors.grey),
+                  const SizedBox(width: 6),
+                  Expanded(
+                    child: Text(basis,
+                        style: const TextStyle(
+                            fontSize: 12, color: Colors.black54, height: 1.4)),
+                  ),
+                ],
+              ),
+            ],
+            const SizedBox(height: 8),
+            Container(
+              padding: const EdgeInsets.all(10),
+              decoration: BoxDecoration(
+                color: Colors.amber.withOpacity(0.08),
+                borderRadius: BorderRadius.circular(8),
+                border:
+                Border.all(color: Colors.amber.withOpacity(0.3)),
+              ),
+              child: const Row(
+                children: [
+                  Icon(Icons.warning_amber_outlined,
+                      size: 14, color: Colors.amber),
+                  SizedBox(width: 6),
+                  Expanded(
+                    child: Text(
+                      'Dental age is an estimate based on tooth count and eruption patterns. Consult a dentist for clinical assessment.',
+                      style: TextStyle(fontSize: 11, color: Colors.black54),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  // ── Tooth type breakdown card ─────────────────────────────────────
+  Widget _buildToothTypeCard(XraySummary s) {
+    if (s.toothTypeBreakdown.isEmpty) return const SizedBox.shrink();
+    final typeIcons = {
+      'Incisor': Icons.looks_one_outlined,
+      'Canine': Icons.looks_two_outlined,
+      'Premolar': Icons.looks_3_outlined,
+      'Molar': Icons.looks_4_outlined,
+      'Unknown': Icons.help_outline,
+    };
+    final typeColors = {
+      'Incisor': const Color(0xFF5C6BC0),
+      'Canine': const Color(0xFF26A69A),
+      'Premolar': const Color(0xFFEF6C00),
+      'Molar': const Color(0xFF6D4C41),
+      'Unknown': Colors.grey,
+    };
+    return Card(
+      elevation: 3,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Row(
+              children: [
+                Icon(Icons.category_outlined, size: 20),
+                SizedBox(width: 8),
+                Text('Tooth Types Detected',
+                    style: TextStyle(
+                        fontSize: 16, fontWeight: FontWeight.bold)),
+              ],
+            ),
+            const SizedBox(height: 14),
+            Wrap(
+              spacing: 10,
+              runSpacing: 10,
+              children: s.toothTypeBreakdown.entries.map((e) {
+                final type = e.key;
+                final count = e.value as int;
+                final color = typeColors[type] ?? Colors.grey;
+                final icon = typeIcons[type] ?? Icons.help_outline;
+                return Container(
+                  padding: const EdgeInsets.symmetric(
+                      horizontal: 14, vertical: 10),
+                  decoration: BoxDecoration(
+                    color: color.withOpacity(0.08),
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: color.withOpacity(0.3)),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(icon, color: color, size: 18),
+                      const SizedBox(width: 8),
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(type,
+                              style: TextStyle(
+                                  fontSize: 13,
+                                  fontWeight: FontWeight.w600,
+                                  color: color)),
+                          Text('$count detected',
+                              style: TextStyle(
+                                  fontSize: 11, color: color.withOpacity(0.7))),
+                        ],
+                      ),
+                    ],
+                  ),
+                );
+              }).toList(),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   // ── New analysis button ───────────────────────────────────────────
   Widget _buildNewAnalysisButton() {
     return OutlinedButton.icon(
@@ -834,7 +1022,7 @@ class _XrayAnalysisScreenState extends State<XrayAnalysisScreen>
         side: BorderSide(color: AppConstants.primaryColor),
         padding: const EdgeInsets.symmetric(vertical: 14),
         shape:
-            RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       ),
     );
   }

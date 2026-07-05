@@ -10,6 +10,7 @@ import 'storage_service.dart';
 /// Result model for a single detected tooth.
 class ToothResult {
   final int fdiNumber;
+  final String toothType;
   final double detectionConfidence;
   final String disease;
   final double diseaseConfidence;
@@ -20,6 +21,7 @@ class ToothResult {
 
   const ToothResult({
     required this.fdiNumber,
+    required this.toothType,
     required this.detectionConfidence,
     required this.disease,
     required this.diseaseConfidence,
@@ -30,19 +32,20 @@ class ToothResult {
   });
 
   factory ToothResult.fromJson(Map<String, dynamic> j) => ToothResult(
-        fdiNumber: j['fdi_number'] as int? ?? 0,
-        detectionConfidence:
-            (j['detection_confidence'] as num?)?.toDouble() ?? 0,
-        disease: j['disease'] as String? ?? 'Unknown',
-        diseaseConfidence:
-            (j['disease_confidence'] as num?)?.toDouble() ?? 0,
-        severity: j['severity'] as String? ?? 'unknown',
-        advice: j['advice'] as String? ?? '',
-        boundingBox:
-            Map<String, dynamic>.from(j['bounding_box'] as Map? ?? {}),
-        diseaseProbabilities: Map<String, dynamic>.from(
-            j['disease_probabilities'] as Map? ?? {}),
-      );
+    fdiNumber: j['fdi_number'] as int? ?? 0,
+    toothType: j['tooth_type'] as String? ?? 'Unknown',
+    detectionConfidence:
+    (j['detection_confidence'] as num?)?.toDouble() ?? 0,
+    disease: j['disease'] as String? ?? 'Unknown',
+    diseaseConfidence:
+    (j['disease_confidence'] as num?)?.toDouble() ?? 0,
+    severity: j['severity'] as String? ?? 'unknown',
+    advice: j['advice'] as String? ?? '',
+    boundingBox:
+    Map<String, dynamic>.from(j['bounding_box'] as Map? ?? {}),
+    diseaseProbabilities: Map<String, dynamic>.from(
+        j['disease_probabilities'] as Map? ?? {}),
+  );
 }
 
 /// Summary of the full X-ray scan.
@@ -52,6 +55,8 @@ class XraySummary {
   final int diseasedTeeth;
   final String overallStatus;
   final Map<String, dynamic> diseaseBreakdown;
+  final Map<String, dynamic> toothTypeBreakdown;
+  final Map<String, dynamic> ageEstimate;
 
   const XraySummary({
     required this.totalTeethDetected,
@@ -59,16 +64,22 @@ class XraySummary {
     required this.diseasedTeeth,
     required this.overallStatus,
     required this.diseaseBreakdown,
+    required this.toothTypeBreakdown,
+    required this.ageEstimate,
   });
 
   factory XraySummary.fromJson(Map<String, dynamic> j) => XraySummary(
-        totalTeethDetected: j['total_teeth_detected'] as int? ?? 0,
-        healthyTeeth: j['healthy_teeth'] as int? ?? 0,
-        diseasedTeeth: j['diseased_teeth'] as int? ?? 0,
-        overallStatus: j['overall_status'] as String? ?? 'unknown',
-        diseaseBreakdown: Map<String, dynamic>.from(
-            j['disease_breakdown'] as Map? ?? {}),
-      );
+    totalTeethDetected: j['total_teeth_detected'] as int? ?? 0,
+    healthyTeeth: j['healthy_teeth'] as int? ?? 0,
+    diseasedTeeth: j['diseased_teeth'] as int? ?? 0,
+    overallStatus: j['overall_status'] as String? ?? 'unknown',
+    diseaseBreakdown: Map<String, dynamic>.from(
+        j['disease_breakdown'] as Map? ?? {}),
+    toothTypeBreakdown: Map<String, dynamic>.from(
+        j['tooth_type_breakdown'] as Map? ?? {}),
+    ageEstimate: Map<String, dynamic>.from(
+        j['age_estimate'] as Map? ?? {}),
+  );
 }
 
 /// Full analysis result from the backend.
@@ -154,7 +165,7 @@ class XrayService {
 
     try {
       final streamed =
-          await request.send().timeout(const Duration(seconds: 120));
+      await request.send().timeout(const Duration(seconds: 120));
       final response = await http.Response.fromStream(streamed);
 
       debugPrint('📡 Response status: ${response.statusCode}');
