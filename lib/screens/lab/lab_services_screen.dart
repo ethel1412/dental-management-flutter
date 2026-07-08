@@ -38,10 +38,11 @@ class _LabServicesScreenState extends State<LabServicesScreen> {
       );
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
-        final profile = data['lab'] ?? data['profile'] ?? data;
+        final raw = data['lab'] ?? data['profile'] ?? data;
+        final profile = raw is Map<String, dynamic> ? raw : null;
         setState(() {
-          _labProfile = profile as Map<String, dynamic>?;
-          _services = profile['services'] ?? profile['service_types'] ?? profile['tests_offered'] ?? [];
+          _labProfile = profile;
+          _services = profile?['services'] ?? profile?['service_types'] ?? profile?['tests_offered'] ?? [];
           _isLoading = false;
         });
       } else {
@@ -203,7 +204,7 @@ class _LabServicesScreenState extends State<LabServicesScreen> {
   }
 }
 
-// ─── Service Card ─────────────────────────────────────────────────────────────
+// ─── Service Card ─────────────────────────────────────────────────────────────────────────────
 
 class _ServiceCard extends StatelessWidget {
   final dynamic service;
@@ -213,7 +214,6 @@ class _ServiceCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // Service can be a string or a Map
     if (service is String) {
       return Card(
         elevation: 1,
@@ -235,7 +235,7 @@ class _ServiceCard extends StatelessWidget {
       );
     }
 
-    final s = service as Map<String, dynamic>;
+    final s = service is Map<String, dynamic> ? service as Map<String, dynamic> : <String, dynamic>{};
     final name = s['service_name'] ?? s['name'] ?? s['test_name'] ?? 'Service ${index + 1}';
     final desc = s['description'] ?? s['desc'] ?? '';
     final price = s['price'] ?? s['cost'] ?? s['fee'] ?? '';

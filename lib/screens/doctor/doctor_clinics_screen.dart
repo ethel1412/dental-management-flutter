@@ -38,10 +38,11 @@ class _DoctorClinicsScreenState extends State<DoctorClinicsScreen> {
       );
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
-        final profile = data['doctor'] ?? data['profile'] ?? data;
+        final raw = data['doctor'] ?? data['profile'] ?? data;
+        final profile = raw is Map<String, dynamic> ? raw : null;
         setState(() {
-          _profile = profile as Map<String, dynamic>?;
-          _clinics = profile['clinics'] ?? profile['clinic_addresses'] ?? [];
+          _profile = profile;
+          _clinics = profile?['clinics'] ?? profile?['clinic_addresses'] ?? [];
           _isLoading = false;
         });
       } else {
@@ -75,10 +76,8 @@ class _DoctorClinicsScreenState extends State<DoctorClinicsScreen> {
                   child: ListView(
                     padding: const EdgeInsets.all(16),
                     children: [
-                      // Doctor summary card
                       if (_profile != null) _buildDoctorSummary(),
                       const SizedBox(height: 16),
-                      // Section header
                       Row(
                         children: [
                           const Icon(Icons.business, size: 18, color: AppConstants.primaryColor),
@@ -95,7 +94,6 @@ class _DoctorClinicsScreenState extends State<DoctorClinicsScreen> {
                       else
                         ...List.generate(_clinics.length, (i) => _ClinicCard(clinic: _clinics[i], index: i)),
                       const SizedBox(height: 20),
-                      // Availability info
                       if (_profile != null) _buildAvailability(),
                     ],
                   ),
@@ -279,7 +277,7 @@ class _DoctorClinicsScreenState extends State<DoctorClinicsScreen> {
   }
 }
 
-// ─── Clinic Card ─────────────────────────────────────────────────────────────
+// ─── Clinic Card ────────────────────────────────────────────────────────────────────────────
 
 class _ClinicCard extends StatelessWidget {
   final dynamic clinic;
