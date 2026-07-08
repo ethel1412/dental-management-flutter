@@ -17,7 +17,6 @@ class AuthProvider with ChangeNotifier {
   // DEV: stores the last OTP returned by the server
   String? _devOtp;
 
-  // Getters
   bool get isLoading => _isLoading;
   String? get error => _error;
   bool get isLoggedIn => _isLoggedIn;
@@ -39,19 +38,18 @@ class AuthProvider with ChangeNotifier {
 
   // Register user
   Future<bool> register(
-      String mobileNumber,
-      String password,
-      String role,
-      String? email,
-      ) async {
+    String mobileNumber,
+    String password,
+    String role,
+    String? email,
+  ) async {
     _isLoading = true;
     _error = null;
     _devOtp = null;
     notifyListeners();
-
     try {
-      final response = await _authService.register(mobileNumber, password, role, email);
-      // DEV: capture OTP from response
+      final response =
+          await _authService.register(mobileNumber, password, role, email);
       _devOtp = response['otp']?.toString();
       _isLoading = false;
       notifyListeners();
@@ -70,10 +68,8 @@ class AuthProvider with ChangeNotifier {
     _error = null;
     _devOtp = null;
     notifyListeners();
-
     try {
       final response = await _authService.login(mobileNumber, password);
-      // DEV: capture OTP from response
       _devOtp = response['otp']?.toString();
       _isLoading = false;
       notifyListeners();
@@ -86,20 +82,30 @@ class AuthProvider with ChangeNotifier {
     }
   }
 
-  // Verify OTP
+  // Verify OTP — also persists session to storage so it survives hot restart
   Future<bool> verifyOTP(String mobileNumber, String otp) async {
     _isLoading = true;
     _error = null;
     notifyListeners();
-
     try {
       final response = await _authService.verifyOTP(mobileNumber, otp);
 
       _isLoggedIn = true;
+
       if (response.containsKey('user')) {
-        _userData = response['user'];
-        _userRole = _userData!['role'];
-        _userId = _userData!['id'];
+        _userData = response['user'] as Map<String, dynamic>;
+        _userRole = _userData!['role']?.toString();
+        final rawId = _userData!['id'];
+        _userId = rawId is int ? rawId : int.tryParse(rawId.toString());
+      }
+
+      // Persist session — ensures screens survive hot restart / app relaunch
+      if (response.containsKey('access_token')) {
+        await _storage.saveToken(response['access_token'].toString());
+        await _storage.saveLoginStatus(true);
+        if (_userRole != null) await _storage.saveUserRole(_userRole!);
+        if (_userId != null) await _storage.saveUserId(_userId!);
+        if (_userData != null) await _storage.saveUserData(_userData!);
       }
 
       _isLoading = false;
@@ -119,10 +125,8 @@ class AuthProvider with ChangeNotifier {
     _error = null;
     _devOtp = null;
     notifyListeners();
-
     try {
       final response = await _authService.resendOTP(mobileNumber);
-      // DEV: capture new OTP from resend response
       _devOtp = response['otp']?.toString();
       _isLoading = false;
       notifyListeners();
@@ -137,17 +141,17 @@ class AuthProvider with ChangeNotifier {
 
   // Register Doctor
   Future<bool> registerDoctor(
-      Map<String, String> data,
-      File? dciCertificate,
-      File? profileImage,
-      ) async {
+    Map<String, String> data,
+    File? dciCertificate,
+    File? profileImage,
+  ) async {
     _isLoading = true;
     _error = null;
     _devOtp = null;
     notifyListeners();
-
     try {
-      final response = await _authService.registerDoctor(data, dciCertificate, profileImage);
+      final response =
+          await _authService.registerDoctor(data, dciCertificate, profileImage);
       _devOtp = response['otp']?.toString();
       _isLoading = false;
       notifyListeners();
@@ -162,16 +166,16 @@ class AuthProvider with ChangeNotifier {
 
   // Register Patient
   Future<bool> registerPatient(
-      Map<String, String> data,
-      File? profileImage,
-      ) async {
+    Map<String, String> data,
+    File? profileImage,
+  ) async {
     _isLoading = true;
     _error = null;
     _devOtp = null;
     notifyListeners();
-
     try {
-      final response = await _authService.registerPatient(data, profileImage);
+      final response =
+          await _authService.registerPatient(data, profileImage);
       _devOtp = response['otp']?.toString();
       _isLoading = false;
       notifyListeners();
@@ -186,17 +190,17 @@ class AuthProvider with ChangeNotifier {
 
   // Register Lab
   Future<bool> registerLab(
-      Map<String, String> data,
-      File? registrationCertificate,
-      File? labImage,
-      ) async {
+    Map<String, String> data,
+    File? registrationCertificate,
+    File? labImage,
+  ) async {
     _isLoading = true;
     _error = null;
     _devOtp = null;
     notifyListeners();
-
     try {
-      final response = await _authService.registerLab(data, registrationCertificate, labImage);
+      final response =
+          await _authService.registerLab(data, registrationCertificate, labImage);
       _devOtp = response['otp']?.toString();
       _isLoading = false;
       notifyListeners();
@@ -221,7 +225,6 @@ class AuthProvider with ChangeNotifier {
     notifyListeners();
   }
 
-  // Clear error
   void clearError() {
     _error = null;
     notifyListeners();
