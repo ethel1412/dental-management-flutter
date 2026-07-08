@@ -94,8 +94,8 @@ class _AppointmentsScreenState extends State<AppointmentsScreen>
             content: Text('Appointment marked as $status'),
             backgroundColor: AppConstants.secondaryColor,
             behavior: SnackBarBehavior.floating,
-            shape:
-                RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+            shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(10)),
           ),
         );
         _fetchAppointments();
@@ -168,8 +168,8 @@ class _AppointmentsScreenState extends State<AppointmentsScreen>
       body: _isLoading
           ? const Center(
               child: CircularProgressIndicator(
-                valueColor: AlwaysStoppedAnimation<Color>(
-                    AppConstants.primaryColor),
+                valueColor:
+                    AlwaysStoppedAnimation<Color>(AppConstants.primaryColor),
               ),
             )
           : _error != null
@@ -228,8 +228,7 @@ class _AppointmentsScreenState extends State<AppointmentsScreen>
             const SizedBox(height: 16),
             Text(
               'No appointments found',
-              style: TextStyle(
-                  color: Colors.grey.shade600, fontSize: 16),
+              style: TextStyle(color: Colors.grey.shade600, fontSize: 16),
             ),
           ],
         ),
@@ -275,7 +274,6 @@ class _AppointmentCard extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Header: ID + status badge
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
@@ -286,8 +284,8 @@ class _AppointmentCard extends StatelessWidget {
                       color: AppConstants.primaryColor),
                 ),
                 Container(
-                  padding: const EdgeInsets.symmetric(
-                      horizontal: 10, vertical: 4),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                   decoration: BoxDecoration(
                     color: color.withOpacity(0.12),
                     borderRadius: BorderRadius.circular(20),
@@ -304,39 +302,34 @@ class _AppointmentCard extends StatelessWidget {
               ],
             ),
             const SizedBox(height: 8),
-            // Patient
             _row(Icons.person, appt['patient']?['full_name'] ?? 'Patient'),
             const SizedBox(height: 4),
-            // Date + time
             Row(
               children: [
-                _rowInline(Icons.calendar_month,
-                    appt['appointment_date'] ?? ''),
+                _rowInline(
+                    Icons.calendar_month, appt['appointment_date'] ?? ''),
                 const SizedBox(width: 16),
-                _rowInline(Icons.access_time,
-                    appt['appointment_time'] ?? ''),
+                _rowInline(
+                    Icons.access_time, appt['appointment_time'] ?? ''),
               ],
             ),
-            // Reason
             if (appt['reason'] != null) ...[
               const SizedBox(height: 4),
               _row(Icons.medical_information, appt['reason']),
             ],
-            // Type
             if (appt['appointment_type'] != null) ...[
               const SizedBox(height: 4),
               _row(Icons.videocam_outlined,
                   appt['appointment_type'].toString().toUpperCase()),
             ],
-            // Actions
             if (status == 'scheduled') ...[
               const SizedBox(height: 12),
               Row(
                 children: [
                   Expanded(
                     child: OutlinedButton(
-                      onPressed: () => onUpdateStatus(
-                          appt['appointment_id'], 'confirmed'),
+                      onPressed: () =>
+                          onUpdateStatus(appt['appointment_id'], 'confirmed'),
                       style: OutlinedButton.styleFrom(
                         foregroundColor: Colors.green,
                         side: const BorderSide(color: Colors.green),
@@ -349,8 +342,8 @@ class _AppointmentCard extends StatelessWidget {
                   const SizedBox(width: 8),
                   Expanded(
                     child: OutlinedButton(
-                      onPressed: () => onUpdateStatus(
-                          appt['appointment_id'], 'cancelled'),
+                      onPressed: () =>
+                          onUpdateStatus(appt['appointment_id'], 'cancelled'),
                       style: OutlinedButton.styleFrom(
                         foregroundColor: Colors.red,
                         side: const BorderSide(color: Colors.red),
@@ -368,8 +361,8 @@ class _AppointmentCard extends StatelessWidget {
               SizedBox(
                 width: double.infinity,
                 child: ElevatedButton(
-                  onPressed: () => onUpdateStatus(
-                      appt['appointment_id'], 'completed'),
+                  onPressed: () =>
+                      onUpdateStatus(appt['appointment_id'], 'completed'),
                   style: ElevatedButton.styleFrom(
                     backgroundColor: Colors.green,
                     foregroundColor: Colors.white,
@@ -393,8 +386,7 @@ class _AppointmentCard extends StatelessWidget {
         const SizedBox(width: 6),
         Expanded(
           child: Text(text,
-              style:
-                  TextStyle(fontSize: 13, color: Colors.grey.shade700),
+              style: TextStyle(fontSize: 13, color: Colors.grey.shade700),
               maxLines: 2,
               overflow: TextOverflow.ellipsis),
         ),

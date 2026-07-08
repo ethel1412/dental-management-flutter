@@ -7,11 +7,6 @@ import 'appointments_screen.dart';
 import 'doctor_profile_screen.dart';
 import 'xray_analysis_screen.dart';
 
-// NOTE: ClinicalProfileScreen requires a patientId + patientName, so it
-// is opened from the Patients list, not directly from the dashboard.
-// The dashboard "Clinical Records" card opens Appointments instead as a
-// sensible default until a patient-search flow is added.
-
 class DoctorDashboardScreen extends StatelessWidget {
   const DoctorDashboardScreen({super.key});
 
@@ -51,7 +46,6 @@ class DoctorDashboardScreen extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              // Welcome card
               Card(
                 elevation: 4,
                 shape: RoundedRectangleBorder(
@@ -114,16 +108,13 @@ class DoctorDashboardScreen extends StatelessWidget {
                   ),
                 ),
               ),
-
               const SizedBox(height: 20),
-
               const Padding(
                 padding: EdgeInsets.only(left: 4, bottom: 10),
                 child: Text('Quick Access',
                     style: TextStyle(
                         fontSize: 16, fontWeight: FontWeight.w600)),
               ),
-
               GridView.count(
                 shrinkWrap: true,
                 physics: const NeverScrollableScrollPhysics(),
@@ -155,7 +146,9 @@ class DoctorDashboardScreen extends StatelessWidget {
                     icon: Icons.medical_information,
                     title: 'Clinical Records',
                     color: Colors.orange,
-                    onTap: () => _comingSoon(context, 'Clinical Records — open from a patient\'s profile'),
+                    onTap: () => _comingSoon(
+                        context,
+                        'Clinical Records — open from a patient profile'),
                   ),
                   _buildFeatureCard(
                     context,
@@ -217,7 +210,8 @@ class DoctorDashboardScreen extends StatelessWidget {
   }) {
     return Card(
       elevation: 2,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+      shape:
+          RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
       child: InkWell(
         onTap: onTap,
         borderRadius: BorderRadius.circular(14),

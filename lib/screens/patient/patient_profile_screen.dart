@@ -73,7 +73,8 @@ class _PatientProfileScreenState extends State<PatientProfileScreen> {
       } else {
         final body = jsonDecode(response.body);
         setState(() {
-          _error = body['detail'] ?? body['message'] ?? 'Failed to load profile';
+          _error =
+              body['detail'] ?? body['message'] ?? 'Failed to load profile';
           _isLoading = false;
         });
       }
@@ -130,8 +131,8 @@ class _PatientProfileScreenState extends State<PatientProfileScreen> {
             content: const Text('Profile updated successfully'),
             backgroundColor: AppConstants.secondaryColor,
             behavior: SnackBarBehavior.floating,
-            shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(10)),
+            shape:
+                RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
           ),
         );
       } else {
@@ -151,7 +152,8 @@ class _PatientProfileScreenState extends State<PatientProfileScreen> {
         content: Text(msg),
         backgroundColor: AppConstants.errorColor,
         behavior: SnackBarBehavior.floating,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+        shape:
+            RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
       ),
     );
   }
@@ -185,16 +187,16 @@ class _PatientProfileScreenState extends State<PatientProfileScreen> {
           if (_isEditing)
             TextButton(
               onPressed: _cancelEdit,
-              child: const Text('Cancel',
-                  style: TextStyle(color: Colors.white)),
+              child:
+                  const Text('Cancel', style: TextStyle(color: Colors.white)),
             ),
         ],
       ),
       body: _isLoading
           ? const Center(
               child: CircularProgressIndicator(
-                valueColor: AlwaysStoppedAnimation<Color>(
-                    AppConstants.primaryColor),
+                valueColor:
+                    AlwaysStoppedAnimation<Color>(AppConstants.primaryColor),
               ),
             )
           : _error != null
@@ -228,8 +230,7 @@ class _PatientProfileScreenState extends State<PatientProfileScreen> {
             const SizedBox(height: 6),
             Text(_error!,
                 textAlign: TextAlign.center,
-                style:
-                    TextStyle(fontSize: 13, color: Colors.grey.shade500)),
+                style: TextStyle(fontSize: 13, color: Colors.grey.shade500)),
             const SizedBox(height: 20),
             ElevatedButton.icon(
               onPressed: _fetchProfile,
@@ -253,7 +254,6 @@ class _PatientProfileScreenState extends State<PatientProfileScreen> {
     final name = p['full_name'] ?? p['name'] ?? 'Patient';
     return Column(
       children: [
-        // Avatar card
         Card(
           elevation: 3,
           shape:
@@ -280,16 +280,14 @@ class _PatientProfileScreenState extends State<PatientProfileScreen> {
                     style: const TextStyle(
                         fontSize: 20, fontWeight: FontWeight.bold)),
                 const SizedBox(height: 4),
-                Text('Patient',
-                    style: const TextStyle(
-                        fontSize: 14,
-                        color: AppConstants.primaryColor)),
+                const Text('Patient',
+                    style: TextStyle(
+                        fontSize: 14, color: AppConstants.primaryColor)),
               ],
             ),
           ),
         ),
         const SizedBox(height: 14),
-        // Info card
         Card(
           elevation: 2,
           shape:
@@ -311,16 +309,15 @@ class _PatientProfileScreenState extends State<PatientProfileScreen> {
                 ),
                 const Divider(height: 18),
                 _infoRow(Icons.badge_outlined, 'Name', name),
-                _infoRow(Icons.cake_outlined, 'Age',
-                    p['age']?.toString() ?? '—'),
                 _infoRow(
-                    Icons.wc_outlined, 'Gender', p['gender'] ?? '—'),
-                _infoRow(Icons.email_outlined, 'Email',
-                    p['email'] ?? '—'),
+                    Icons.cake_outlined, 'Age', p['age']?.toString() ?? '—'),
+                _infoRow(Icons.wc_outlined, 'Gender', p['gender'] ?? '—'),
+                _infoRow(
+                    Icons.email_outlined, 'Email', p['email'] ?? '—'),
                 _infoRow(Icons.phone_outlined, 'Phone',
                     p['phone'] ?? p['mobile'] ?? '—'),
-                _infoRow(Icons.home_outlined, 'Address',
-                    p['address'] ?? '—'),
+                _infoRow(
+                    Icons.home_outlined, 'Address', p['address'] ?? '—'),
               ],
             ),
           ),
@@ -395,12 +392,13 @@ class _PatientProfileScreenState extends State<PatientProfileScreen> {
                           fontSize: 14, fontWeight: FontWeight.bold)),
                   const SizedBox(height: 14),
                   _field(
-                      ctrl: _nameCtrl,
-                      label: 'Full Name',
-                      icon: Icons.person_outline,
-                      validator: (v) => v == null || v.trim().isEmpty
-                          ? 'Name is required'
-                          : null),
+                    ctrl: _nameCtrl,
+                    label: 'Full Name',
+                    icon: Icons.person_outline,
+                    validator: (v) => v == null || v.trim().isEmpty
+                        ? 'Name is required'
+                        : null,
+                  ),
                   _field(
                     ctrl: _ageCtrl,
                     label: 'Age',
@@ -425,7 +423,6 @@ class _PatientProfileScreenState extends State<PatientProfileScreen> {
                     icon: Icons.home_outlined,
                     maxLines: 2,
                   ),
-                  // Gender dropdown
                   Padding(
                     padding: const EdgeInsets.only(bottom: 14),
                     child: DropdownButtonFormField<String>(
@@ -473,8 +470,8 @@ class _PatientProfileScreenState extends State<PatientProfileScreen> {
                       width: 22,
                       child: CircularProgressIndicator(
                         strokeWidth: 2.5,
-                        valueColor: AlwaysStoppedAnimation<Color>(
-                            Colors.white),
+                        valueColor:
+                            AlwaysStoppedAnimation<Color>(Colors.white),
                       ),
                     )
                   : const Text('Save Changes'),

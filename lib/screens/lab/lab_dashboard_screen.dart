@@ -45,7 +45,6 @@ class LabDashboardScreen extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              // Welcome card
               Card(
                 elevation: 4,
                 shape: RoundedRectangleBorder(
@@ -108,16 +107,13 @@ class LabDashboardScreen extends StatelessWidget {
                   ),
                 ),
               ),
-
               const SizedBox(height: 20),
-
               const Padding(
                 padding: EdgeInsets.only(left: 4, bottom: 10),
                 child: Text('Quick Access',
                     style: TextStyle(
                         fontSize: 16, fontWeight: FontWeight.w600)),
               ),
-
               GridView.count(
                 shrinkWrap: true,
                 physics: const NeverScrollableScrollPhysics(),
@@ -158,8 +154,8 @@ class LabDashboardScreen extends StatelessWidget {
                     onTap: () => Navigator.push(
                       context,
                       MaterialPageRoute(
-                          builder: (_) =>
-                              const OrdersScreen(initialFilter: 'completed')),
+                          builder: (_) => const OrdersScreen(
+                              initialFilter: 'completed')),
                     ),
                   ),
                   _buildFeatureCard(
@@ -218,7 +214,8 @@ class LabDashboardScreen extends StatelessWidget {
   }) {
     return Card(
       elevation: 2,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+      shape:
+          RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
       child: InkWell(
         onTap: onTap,
         borderRadius: BorderRadius.circular(14),
