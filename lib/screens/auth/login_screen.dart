@@ -1,4 +1,3 @@
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../providers/auth_provider.dart';
@@ -42,69 +41,12 @@ class _LoginScreenState extends State<LoginScreen> {
     if (!mounted) return;
 
     if (success) {
-      final otp = authProvider.devOtp;
-
-      // DEV ONLY: show OTP in a dialog before navigating
-      if (kDebugMode && otp != null) {
-        await showDialog(
-          context: context,
-          barrierDismissible: false,
-          builder: (_) => AlertDialog(
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-            title: Row(
-              children: const [
-                Icon(Icons.developer_mode, color: Colors.orange),
-                SizedBox(width: 8),
-                Text('DEV MODE — OTP'),
-              ],
-            ),
-            content: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                const Text('Your OTP for verification:'),
-                const SizedBox(height: 16),
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-                  decoration: BoxDecoration(
-                    color: Colors.amber.shade50,
-                    borderRadius: BorderRadius.circular(8),
-                    border: Border.all(color: Colors.amber.shade300),
-                  ),
-                  child: Text(
-                    otp,
-                    style: const TextStyle(
-                      fontSize: 32,
-                      fontWeight: FontWeight.bold,
-                      letterSpacing: 8,
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 8),
-                Text(
-                  'This dialog only appears in debug builds.',
-                  style: TextStyle(fontSize: 12, color: Colors.grey.shade500),
-                ),
-              ],
-            ),
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.pop(context),
-                child: const Text('Go to Verify'),
-              ),
-            ],
-          ),
-        );
-      }
-
-      if (!mounted) return;
-
-      // Navigate to OTP verification, pre-filling OTP in debug mode
+      Helpers.showToast('OTP sent to your email!');
       Navigator.push(
         context,
         MaterialPageRoute(
           builder: (_) => OTPVerificationScreen(
             mobileNumber: _mobileController.text.trim(),
-            prefillOtp: kDebugMode ? authProvider.devOtp : null,
           ),
         ),
       );
