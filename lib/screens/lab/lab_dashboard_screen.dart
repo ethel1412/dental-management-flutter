@@ -2,18 +2,37 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../providers/auth_provider.dart';
 import '../../utils/constants.dart';
-import '../../utils/helpers.dart';
 import '../auth/login_screen.dart';
+import 'orders_screen.dart';
+import 'lab_profile_screen.dart';
 
 class LabDashboardScreen extends StatelessWidget {
   const LabDashboardScreen({super.key});
 
   @override
   Widget build(BuildContext context) {
+    final userData = context.watch<AuthProvider>().userData;
+    final name = userData?['name'] as String? ??
+        userData?['lab_name'] as String? ??
+        'Lab';
+
     return Scaffold(
+      backgroundColor: const Color(0xFFF8F9FF),
       appBar: AppBar(
         title: const Text('Lab Dashboard'),
+        backgroundColor: AppConstants.accentColor,
+        foregroundColor: Colors.white,
+        elevation: 0,
         actions: [
+          IconButton(
+            icon: const Icon(Icons.person_outline),
+            tooltip: 'My Profile',
+            onPressed: () => Navigator.push(
+              context,
+              MaterialPageRoute(
+                  builder: (_) => const LabProfileScreen()),
+            ),
+          ),
           IconButton(
             icon: const Icon(Icons.logout),
             onPressed: () => _handleLogout(context),
@@ -21,106 +40,156 @@ class LabDashboardScreen extends StatelessWidget {
         ],
       ),
       body: SafeArea(
-        child: Padding(
+        child: SingleChildScrollView(
           padding: const EdgeInsets.all(16),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              // Welcome Card
+              // Welcome card
               Card(
                 elevation: 4,
-                child: Padding(
+                shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(16)),
+                child: Container(
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(16),
+                    gradient: LinearGradient(
+                      colors: [
+                        AppConstants.accentColor,
+                        AppConstants.accentColor.withGreen(120),
+                      ],
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                    ),
+                  ),
                   padding: const EdgeInsets.all(20),
-                  child: Column(
+                  child: Row(
                     children: [
-                      const CircleAvatar(
-                        radius: 40,
-                        backgroundColor: AppConstants.accentColor,
-                        child: Icon(
-                          Icons.science,
-                          size: 40,
-                          color: Colors.white,
+                      GestureDetector(
+                        onTap: () => Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                              builder: (_) => const LabProfileScreen()),
+                        ),
+                        child: CircleAvatar(
+                          radius: 32,
+                          backgroundColor: Colors.white.withOpacity(0.2),
+                          child: Text(
+                            name.isNotEmpty ? name[0].toUpperCase() : 'L',
+                            style: const TextStyle(
+                                fontSize: 26,
+                                fontWeight: FontWeight.bold,
+                                color: Colors.white),
+                          ),
                         ),
                       ),
-                      const SizedBox(height: 16),
-                      const Text(
-                        'Welcome, Lab!',
-                        style: TextStyle(
-                          fontSize: 24,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                      const SizedBox(height: 8),
-                      Text(
-                        'Manage your orders and services',
-                        style: TextStyle(
-                          fontSize: 14,
-                          color: AppConstants.textSecondaryColor,
+                      const SizedBox(width: 16),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'Welcome, $name!',
+                              style: const TextStyle(
+                                  fontSize: 20,
+                                  fontWeight: FontWeight.bold,
+                                  color: Colors.white),
+                            ),
+                            const SizedBox(height: 4),
+                            const Text(
+                              'Manage your orders and services',
+                              style: TextStyle(
+                                  fontSize: 13, color: Colors.white70),
+                            ),
+                          ],
                         ),
                       ),
                     ],
                   ),
                 ),
               ),
-              const SizedBox(height: 24),
-              // Feature Grid
-              Expanded(
-                child: GridView.count(
-                  crossAxisCount: 2,
-                  crossAxisSpacing: 16,
-                  mainAxisSpacing: 16,
-                  children: [
-                    _buildFeatureCard(
-                      icon: Icons.shopping_bag,
-                      title: 'Orders',
-                      color: Colors.blue,
-                      onTap: () {
-                        Helpers.showToast('Coming soon!');
-                      },
-                    ),
-                    _buildFeatureCard(
-                      icon: Icons.pending_actions,
-                      title: 'Pending Orders',
-                      color: Colors.orange,
-                      onTap: () {
-                        Helpers.showToast('Coming soon!');
-                      },
-                    ),
-                    _buildFeatureCard(
-                      icon: Icons.check_circle,
-                      title: 'Completed Orders',
-                      color: Colors.green,
-                      onTap: () {
-                        Helpers.showToast('Coming soon!');
-                      },
-                    ),
-                    _buildFeatureCard(
-                      icon: Icons.bar_chart,
-                      title: 'Reports',
-                      color: Colors.purple,
-                      onTap: () {
-                        Helpers.showToast('Coming soon!');
-                      },
-                    ),
-                    _buildFeatureCard(
-                      icon: Icons.settings,
-                      title: 'Services',
-                      color: Colors.teal,
-                      onTap: () {
-                        Helpers.showToast('Coming soon!');
-                      },
-                    ),
-                    _buildFeatureCard(
-                      icon: Icons.person,
-                      title: 'My Profile',
-                      color: Colors.indigo,
-                      onTap: () {
-                        Helpers.showToast('Coming soon!');
-                      },
-                    ),
-                  ],
-                ),
+
+              const SizedBox(height: 20),
+
+              const Padding(
+                padding: EdgeInsets.only(left: 4, bottom: 10),
+                child: Text('Quick Access',
+                    style: TextStyle(
+                        fontSize: 16, fontWeight: FontWeight.w600)),
               ),
+
+              GridView.count(
+                shrinkWrap: true,
+                physics: const NeverScrollableScrollPhysics(),
+                crossAxisCount: 2,
+                crossAxisSpacing: 16,
+                mainAxisSpacing: 16,
+                childAspectRatio: 1.05,
+                children: [
+                  _buildFeatureCard(
+                    context,
+                    icon: Icons.shopping_bag,
+                    title: 'All Orders',
+                    color: Colors.blue,
+                    onTap: () => Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                          builder: (_) =>
+                              const OrdersScreen(initialFilter: 'all')),
+                    ),
+                  ),
+                  _buildFeatureCard(
+                    context,
+                    icon: Icons.pending_actions,
+                    title: 'Pending',
+                    color: Colors.orange,
+                    onTap: () => Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                          builder: (_) =>
+                              const OrdersScreen(initialFilter: 'pending')),
+                    ),
+                  ),
+                  _buildFeatureCard(
+                    context,
+                    icon: Icons.check_circle,
+                    title: 'Completed',
+                    color: Colors.green,
+                    onTap: () => Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                          builder: (_) =>
+                              const OrdersScreen(initialFilter: 'completed')),
+                    ),
+                  ),
+                  _buildFeatureCard(
+                    context,
+                    icon: Icons.bar_chart,
+                    title: 'Reports',
+                    color: Colors.purple,
+                    onTap: () => _comingSoon(context, 'Reports'),
+                  ),
+                  _buildFeatureCard(
+                    context,
+                    icon: Icons.settings,
+                    title: 'Services',
+                    color: Colors.teal,
+                    onTap: () => _comingSoon(context, 'Services'),
+                  ),
+                  _buildFeatureCard(
+                    context,
+                    icon: Icons.person,
+                    title: 'My Profile',
+                    color: Colors.indigo,
+                    onTap: () => Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                          builder: (_) => const LabProfileScreen()),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 24),
             ],
           ),
         ),
@@ -128,7 +197,20 @@ class LabDashboardScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildFeatureCard({
+  void _comingSoon(BuildContext context, String feature) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text('$feature — coming soon!'),
+        behavior: SnackBarBehavior.floating,
+        shape:
+            RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+        duration: const Duration(seconds: 2),
+      ),
+    );
+  }
+
+  Widget _buildFeatureCard(
+    BuildContext context, {
     required IconData icon,
     required String title,
     required Color color,
@@ -136,34 +218,29 @@ class LabDashboardScreen extends StatelessWidget {
   }) {
     return Card(
       elevation: 2,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
       child: InkWell(
         onTap: onTap,
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(14),
         child: Padding(
           padding: const EdgeInsets.all(16),
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               Container(
-                padding: const EdgeInsets.all(16),
+                padding: const EdgeInsets.all(14),
                 decoration: BoxDecoration(
                   color: color.withOpacity(0.1),
                   borderRadius: BorderRadius.circular(12),
                 ),
-                child: Icon(
-                  icon,
-                  size: 40,
-                  color: color,
-                ),
+                child: Icon(icon, size: 36, color: color),
               ),
-              const SizedBox(height: 12),
+              const SizedBox(height: 10),
               Text(
                 title,
                 textAlign: TextAlign.center,
                 style: const TextStyle(
-                  fontSize: 14,
-                  fontWeight: FontWeight.w600,
-                ),
+                    fontSize: 13, fontWeight: FontWeight.w600),
               ),
             ],
           ),
@@ -190,7 +267,6 @@ class LabDashboardScreen extends StatelessWidget {
         ],
       ),
     );
-
     if (confirmed == true) {
       if (!context.mounted) return;
       await context.read<AuthProvider>().logout();
@@ -198,7 +274,7 @@ class LabDashboardScreen extends StatelessWidget {
       Navigator.pushAndRemoveUntil(
         context,
         MaterialPageRoute(builder: (_) => const LoginScreen()),
-            (route) => false,
+        (route) => false,
       );
     }
   }

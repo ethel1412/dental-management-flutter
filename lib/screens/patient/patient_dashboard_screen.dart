@@ -4,6 +4,8 @@ import '../../providers/auth_provider.dart';
 import '../../utils/constants.dart';
 import '../auth/login_screen.dart';
 import 'xray_analysis_screen.dart';
+import 'search_doctors_screen.dart';
+import 'patient_profile_screen.dart';
 
 class PatientDashboardScreen extends StatelessWidget {
   const PatientDashboardScreen({super.key});
@@ -23,6 +25,15 @@ class PatientDashboardScreen extends StatelessWidget {
         foregroundColor: Colors.white,
         elevation: 0,
         actions: [
+          IconButton(
+            icon: const Icon(Icons.person_outline),
+            tooltip: 'My Profile',
+            onPressed: () => Navigator.push(
+              context,
+              MaterialPageRoute(
+                  builder: (_) => const PatientProfileScreen()),
+            ),
+          ),
           IconButton(
             icon: const Icon(Icons.logout),
             onPressed: () => _handleLogout(context),
@@ -55,15 +66,22 @@ class PatientDashboardScreen extends StatelessWidget {
                   padding: const EdgeInsets.all(20),
                   child: Row(
                     children: [
-                      CircleAvatar(
-                        radius: 32,
-                        backgroundColor: Colors.white.withOpacity(0.2),
-                        child: Text(
-                          name.isNotEmpty ? name[0].toUpperCase() : 'P',
-                          style: const TextStyle(
-                              fontSize: 26,
-                              fontWeight: FontWeight.bold,
-                              color: Colors.white),
+                      GestureDetector(
+                        onTap: () => Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                              builder: (_) => const PatientProfileScreen()),
+                        ),
+                        child: CircleAvatar(
+                          radius: 32,
+                          backgroundColor: Colors.white.withOpacity(0.2),
+                          child: Text(
+                            name.isNotEmpty ? name[0].toUpperCase() : 'P',
+                            style: const TextStyle(
+                                fontSize: 26,
+                                fontWeight: FontWeight.bold,
+                                color: Colors.white),
+                          ),
                         ),
                       ),
                       const SizedBox(width: 16),
@@ -120,34 +138,49 @@ class PatientDashboardScreen extends StatelessWidget {
                     icon: Icons.search,
                     title: 'Find Doctors',
                     color: Colors.blue,
-                    onTap: () {},
+                    onTap: () => Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                          builder: (_) => const SearchDoctorsScreen()),
+                    ),
                   ),
                   _buildFeatureCard(
                     context,
                     icon: Icons.calendar_today,
                     title: 'Appointments',
                     color: Colors.green,
-                    onTap: () {},
+                    onTap: () => _comingSoon(context, 'Appointments'),
                   ),
                   _buildFeatureCard(
                     context,
                     icon: Icons.medical_information,
                     title: 'Medical Records',
                     color: Colors.orange,
-                    onTap: () {},
+                    onTap: () => _comingSoon(context, 'Medical Records'),
                   ),
                   _buildFeatureCard(
                     context,
                     icon: Icons.science,
                     title: 'Lab Orders',
                     color: Colors.purple,
-                    onTap: () {},
+                    onTap: () => _comingSoon(context, 'Lab Orders'),
                   ),
                 ],
               ),
             ],
           ),
         ),
+      ),
+    );
+  }
+
+  void _comingSoon(BuildContext context, String feature) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text('$feature — coming soon!'),
+        behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+        duration: const Duration(seconds: 2),
       ),
     );
   }
@@ -198,7 +231,8 @@ class PatientDashboardScreen extends StatelessWidget {
                     SizedBox(height: 4),
                     Text(
                       'Upload your dental X-ray and get instant AI-powered analysis with per-tooth diagnosis.',
-                      style: TextStyle(fontSize: 12.5, color: Colors.white70),
+                      style:
+                          TextStyle(fontSize: 12.5, color: Colors.white70),
                     ),
                   ],
                 ),
