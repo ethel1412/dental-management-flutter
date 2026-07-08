@@ -90,7 +90,7 @@ class _LabRegistrationScreenState extends State<LabRegistrationScreen> {
       _mobileController.text.trim(),
       _passwordController.text,
       AppConstants.roleLab,
-      _emailController.text.trim().isEmpty ? null : _emailController.text.trim(),
+      _emailController.text.trim(), // Email is now required
     );
 
     if (!mounted) return;
@@ -129,12 +129,13 @@ class _LabRegistrationScreenState extends State<LabRegistrationScreen> {
     if (!mounted) return;
 
     if (profileSuccess) {
-      Helpers.showToast('Registration successful! Please verify OTP.');
+      Helpers.showToast('Registration successful! OTP sent to your email.');
       Navigator.pushReplacement(
         context,
         MaterialPageRoute(
           builder: (_) => OTPVerificationScreen(
             mobileNumber: _mobileController.text.trim(),
+            email: _emailController.text.trim(),
           ),
         ),
       );
@@ -385,14 +386,14 @@ class _LabRegistrationScreenState extends State<LabRegistrationScreen> {
                   maxLength: 15,
                 ),
                 const SizedBox(height: 16),
-                // Email
+                // Email — now required
                 CustomTextField(
-                  label: 'Email (Optional)',
+                  label: 'Email *',
                   hint: 'Enter email address',
                   controller: _emailController,
                   keyboardType: TextInputType.emailAddress,
                   prefixIcon: const Icon(Icons.email),
-                  validator: Validators.validateEmail,
+                  validator: Validators.validateEmailRequired,
                 ),
                 const SizedBox(height: 16),
                 // Password

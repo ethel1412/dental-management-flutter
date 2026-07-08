@@ -13,14 +13,12 @@ import '../lab/lab_dashboard_screen.dart';
 
 class OTPVerificationScreen extends StatefulWidget {
   final String mobileNumber;
-
-  /// DEV ONLY: when provided, the OTP field is pre-filled and a debug banner is shown.
-  final String? prefillOtp;
+  final String? email;
 
   const OTPVerificationScreen({
     super.key,
     required this.mobileNumber,
-    this.prefillOtp,
+    this.email,
   });
 
   @override
@@ -34,10 +32,7 @@ class _OTPVerificationScreenState extends State<OTPVerificationScreen> {
   @override
   void initState() {
     super.initState();
-    // Pre-fill OTP in debug mode
-    _otpController = TextEditingController(
-      text: (kDebugMode && widget.prefillOtp != null) ? widget.prefillOtp : '',
-    );
+    _otpController = TextEditingController();
   }
 
   @override
@@ -60,7 +55,6 @@ class _OTPVerificationScreenState extends State<OTPVerificationScreen> {
     if (success) {
       Helpers.showToast('Login successful!');
 
-      // Navigate to appropriate dashboard
       Widget screen;
       switch (authProvider.userRole) {
         case AppConstants.roleDoctor:
@@ -97,11 +91,7 @@ class _OTPVerificationScreenState extends State<OTPVerificationScreen> {
     if (!mounted) return;
 
     if (success) {
-      Helpers.showToast('OTP sent successfully!');
-      // DEV: update the pre-filled OTP field with the new OTP
-      if (kDebugMode && authProvider.devOtp != null) {
-        _otpController.text = authProvider.devOtp!;
-      }
+      Helpers.showToast('OTP resent to your email!');
     } else {
       Helpers.showToast(
         authProvider.error ?? 'Failed to send OTP',
@@ -110,8 +100,20 @@ class _OTPVerificationScreenState extends State<OTPVerificationScreen> {
     }
   }
 
+  // Mask email for display: abc***@gmail.com
+  String _maskEmail(String email) {
+    final parts = email.split('@');
+    if (parts.length != 2) return email;
+    final name = parts[0];
+    final domain = parts[1];
+    if (name.length <= 3) return '***@$domain';
+    return '${name.substring(0, 3)}***@$domain';
+  }
+
   @override
   Widget build(BuildContext context) {
+    final displayEmail = widget.email != null ? _maskEmail(widget.email!) : null;
+
     return Scaffold(
       appBar: AppBar(
         title: const Text('Verify OTP'),
@@ -126,13 +128,13 @@ class _OTPVerificationScreenState extends State<OTPVerificationScreen> {
               children: [
                 const SizedBox(height: 40),
                 Icon(
-                  Icons.message,
+                  Icons.mark_email_read_outlined,
                   size: 80,
                   color: AppConstants.primaryColor,
                 ),
                 const SizedBox(height: 24),
                 Text(
-                  'Verify OTP',
+                  'Check Your Email',
                   textAlign: TextAlign.center,
                   style: TextStyle(
                     fontSize: 24,
@@ -142,43 +144,16 @@ class _OTPVerificationScreenState extends State<OTPVerificationScreen> {
                 ),
                 const SizedBox(height: 8),
                 Text(
-                  'Enter the 6-digit code sent to\n${widget.mobileNumber}',
+                  displayEmail != null
+                      ? 'We sent a 6-digit OTP to\n$displayEmail'
+                      : 'Enter the 6-digit OTP sent to your email',
                   textAlign: TextAlign.center,
                   style: TextStyle(
                     fontSize: 16,
                     color: AppConstants.textSecondaryColor,
                   ),
                 ),
-                const SizedBox(height: 16),
-
-                // DEV ONLY: amber banner showing the pre-filled OTP
-                if (kDebugMode && widget.prefillOtp != null)
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-                    margin: const EdgeInsets.only(bottom: 16),
-                    decoration: BoxDecoration(
-                      color: Colors.amber.shade100,
-                      borderRadius: BorderRadius.circular(8),
-                      border: Border.all(color: Colors.amber.shade400),
-                    ),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        const Icon(Icons.developer_mode, color: Colors.orange, size: 18),
-                        const SizedBox(width: 8),
-                        Text(
-                          'DEV OTP: ${widget.prefillOtp}',
-                          style: const TextStyle(
-                            fontSize: 18,
-                            fontWeight: FontWeight.bold,
-                            letterSpacing: 4,
-                            color: Colors.orange,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-
+                const SizedBox(height: 32),
                 CustomTextField(
                   label: 'OTP',
                   hint: 'Enter 6-digit OTP',
