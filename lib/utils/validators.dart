@@ -13,10 +13,21 @@ class Validators {
     return null;
   }
 
-  // Email validation
+  // Email validation (optional)
   static String? validateEmail(String? value) {
     if (value == null || value.isEmpty) {
       return null; // Email is optional in most cases
+    }
+    if (!RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$').hasMatch(value)) {
+      return 'Enter a valid email address';
+    }
+    return null;
+  }
+
+  // Email validation (required)
+  static String? validateEmailRequired(String? value) {
+    if (value == null || value.isEmpty) {
+      return 'Email is required';
     }
     if (!RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$').hasMatch(value)) {
       return 'Enter a valid email address';
