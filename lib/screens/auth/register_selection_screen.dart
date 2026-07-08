@@ -20,6 +20,20 @@ class RegisterSelectionScreen extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               const SizedBox(height: 20),
+              // App logo
+              Center(
+                child: Image.asset(
+                  'assets/logo/logo.png',
+                  width: 70,
+                  height: 70,
+                  errorBuilder: (context, error, stackTrace) => Icon(
+                    Icons.medical_services,
+                    size: 60,
+                    color: AppConstants.primaryColor,
+                  ),
+                ),
+              ),
+              const SizedBox(height: 16),
               Text(
                 'Register As',
                 textAlign: TextAlign.center,

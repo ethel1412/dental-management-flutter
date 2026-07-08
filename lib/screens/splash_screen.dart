@@ -30,7 +30,6 @@ class _SplashScreenState extends State<SplashScreen> {
     if (!mounted) return;
 
     if (authProvider.isLoggedIn) {
-      // Navigate to appropriate dashboard based on role
       Widget screen;
       switch (authProvider.userRole) {
         case AppConstants.roleDoctor:
@@ -45,7 +44,6 @@ class _SplashScreenState extends State<SplashScreen> {
         default:
           screen = const LoginScreen();
       }
-
       Navigator.pushReplacement(
         context,
         MaterialPageRoute(builder: (_) => screen),
@@ -66,11 +64,16 @@ class _SplashScreenState extends State<SplashScreen> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            // Logo placeholder
-            Icon(
-              Icons.medical_services,
-              size: 100,
-              color: Colors.white,
+            // App logo
+            Image.asset(
+              'assets/logo/logo.png',
+              width: 120,
+              height: 120,
+              errorBuilder: (context, error, stackTrace) => const Icon(
+                Icons.medical_services,
+                size: 100,
+                color: Colors.white,
+              ),
             ),
             const SizedBox(height: 24),
             Text(

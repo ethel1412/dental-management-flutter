@@ -68,11 +68,18 @@ class _LoginScreenState extends State<LoginScreen> {
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
                 const SizedBox(height: 40),
-                // Logo
-                Icon(
-                  Icons.medical_services,
-                  size: 80,
-                  color: AppConstants.primaryColor,
+                // App logo
+                Center(
+                  child: Image.asset(
+                    'assets/logo/logo.png',
+                    width: 90,
+                    height: 90,
+                    errorBuilder: (context, error, stackTrace) => Icon(
+                      Icons.medical_services,
+                      size: 80,
+                      color: AppConstants.primaryColor,
+                    ),
+                  ),
                 ),
                 const SizedBox(height: 24),
                 Text(
@@ -94,7 +101,6 @@ class _LoginScreenState extends State<LoginScreen> {
                   ),
                 ),
                 const SizedBox(height: 40),
-                // Mobile Number Field
                 CustomTextField(
                   label: 'Mobile Number',
                   hint: 'Enter your mobile number',
@@ -105,7 +111,6 @@ class _LoginScreenState extends State<LoginScreen> {
                   maxLength: 15,
                 ),
                 const SizedBox(height: 20),
-                // Password Field
                 CustomTextField(
                   label: 'Password',
                   hint: 'Enter your password',
@@ -125,7 +130,6 @@ class _LoginScreenState extends State<LoginScreen> {
                   validator: Validators.validatePassword,
                 ),
                 const SizedBox(height: 32),
-                // Login Button
                 Consumer<AuthProvider>(
                   builder: (context, authProvider, _) {
                     return CustomButton(
@@ -136,7 +140,6 @@ class _LoginScreenState extends State<LoginScreen> {
                   },
                 ),
                 const SizedBox(height: 24),
-                // Register Link
                 Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
