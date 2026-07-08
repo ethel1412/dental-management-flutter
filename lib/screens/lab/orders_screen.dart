@@ -6,7 +6,11 @@ import '../../config/api_config.dart';
 import '../../utils/constants.dart';
 
 class OrdersScreen extends StatefulWidget {
-  const OrdersScreen({super.key});
+  /// Optional: pre-select a tab. Values: 'all', 'pending', 'in_progress',
+  /// 'completed', 'cancelled'. Defaults to 'all'.
+  final String initialFilter;
+
+  const OrdersScreen({super.key, this.initialFilter = 'all'});
 
   @override
   State<OrdersScreen> createState() => _OrdersScreenState();
@@ -28,10 +32,29 @@ class _OrdersScreenState extends State<OrdersScreen>
     {'label': 'Cancelled', 'status': 'cancelled'},
   ];
 
+  int _initialTabIndex() {
+    switch (widget.initialFilter) {
+      case 'pending':
+        return 1;
+      case 'in_progress':
+        return 2;
+      case 'completed':
+        return 3;
+      case 'cancelled':
+        return 4;
+      default:
+        return 0;
+    }
+  }
+
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: _tabs.length, vsync: this);
+    _tabController = TabController(
+      length: _tabs.length,
+      vsync: this,
+      initialIndex: _initialTabIndex(),
+    );
     _fetchOrders();
   }
 
@@ -59,14 +82,16 @@ class _OrdersScreenState extends State<OrdersScreen>
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
         setState(() {
-          // backend may return list directly or wrapped in a key
-          _orders = data is List ? data : (data['orders'] ?? data['lab_orders'] ?? []);
+          _orders = data is List
+              ? data
+              : (data['orders'] ?? data['lab_orders'] ?? []);
           _isLoading = false;
         });
       } else {
         final body = jsonDecode(response.body);
         setState(() {
-          _error = body['detail'] ?? body['message'] ?? 'Failed to load orders';
+          _error =
+              body['detail'] ?? body['message'] ?? 'Failed to load orders';
           _isLoading = false;
         });
       }
@@ -91,21 +116,24 @@ class _OrdersScreenState extends State<OrdersScreen>
         body: jsonEncode({'status': newStatus}),
       );
       if (response.statusCode == 200) {
+        if (!mounted) return;
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('Order marked as ${_statusLabel(newStatus)}'),
             backgroundColor: _statusColor(newStatus),
             behavior: SnackBarBehavior.floating,
-            shape:
-                RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+            shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(10)),
           ),
         );
         _fetchOrders();
       } else {
         final body = jsonDecode(response.body);
+        if (!mounted) return;
         _showError(body['detail'] ?? 'Failed to update order');
       }
     } catch (e) {
+      if (!mounted) return;
       _showError('Network error.');
     }
   }
@@ -197,7 +225,8 @@ class _OrdersScreenState extends State<OrdersScreen>
               : TabBarView(
                   controller: _tabController,
                   children: _tabs.map((t) {
-                    final list = _filteredOrders(t['status'] as String?);
+                    final list =
+                        _filteredOrders(t['status'] as String?);
                     return _OrdersList(
                       orders: list,
                       onRefresh: _fetchOrders,
@@ -217,19 +246,19 @@ class _OrdersScreenState extends State<OrdersScreen>
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(Icons.wifi_off_rounded, size: 64, color: Colors.grey.shade400),
+            Icon(Icons.wifi_off_rounded,
+                size: 64, color: Colors.grey.shade400),
             const SizedBox(height: 16),
-            Text(
-              'Could not load orders',
-              style: TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.w600,
-                  color: Colors.grey.shade700),
-            ),
+            Text('Could not load orders',
+                style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w600,
+                    color: Colors.grey.shade700)),
             const SizedBox(height: 6),
             Text(_error!,
                 textAlign: TextAlign.center,
-                style: TextStyle(fontSize: 13, color: Colors.grey.shade500)),
+                style: TextStyle(
+                    fontSize: 13, color: Colors.grey.shade500)),
             const SizedBox(height: 20),
             ElevatedButton.icon(
               onPressed: _fetchOrders,
@@ -273,21 +302,18 @@ class _OrdersList extends StatelessWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(Icons.inbox_rounded, size: 72, color: Colors.grey.shade300),
+            Icon(Icons.inbox_rounded,
+                size: 72, color: Colors.grey.shade300),
             const SizedBox(height: 16),
-            Text(
-              'No orders here',
-              style: TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.w600,
-                  color: Colors.grey.shade600),
-            ),
+            Text('No orders here',
+                style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w600,
+                    color: Colors.grey.shade600)),
             const SizedBox(height: 6),
-            Text(
-              'Orders will appear here once placed',
-              style:
-                  TextStyle(fontSize: 13, color: Colors.grey.shade400),
-            ),
+            Text('Orders will appear here once placed',
+                style: TextStyle(
+                    fontSize: 13, color: Colors.grey.shade400)),
           ],
         ),
       );
@@ -297,7 +323,8 @@ class _OrdersList extends StatelessWidget {
       onRefresh: onRefresh,
       color: AppConstants.primaryColor,
       child: ListView.builder(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        padding:
+            const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
         itemCount: orders.length,
         itemBuilder: (ctx, i) => _OrderCard(
           order: orders[i],
@@ -348,7 +375,8 @@ class _OrderCardState extends State<_OrderCard> {
 
   Future<void> _doUpdate(String newStatus) async {
     setState(() => _updating = true);
-    await widget.onUpdateStatus(o['id'] ?? o['order_id'], newStatus);
+    await widget.onUpdateStatus(
+        o['id'] ?? o['order_id'], newStatus);
     if (mounted) setState(() => _updating = false);
   }
 
@@ -359,18 +387,18 @@ class _OrderCardState extends State<_OrderCard> {
     return Card(
       elevation: 2,
       margin: const EdgeInsets.only(bottom: 12),
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+      shape:
+          RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
       child: Column(
         children: [
-          // ── Header row ──────────────────────────────────────────────────
           InkWell(
-            borderRadius: const BorderRadius.vertical(top: Radius.circular(14)),
+            borderRadius:
+                const BorderRadius.vertical(top: Radius.circular(14)),
             onTap: () => setState(() => _expanded = !_expanded),
             child: Padding(
               padding: const EdgeInsets.all(16),
               child: Row(
                 children: [
-                  // Icon badge
                   Container(
                     width: 44,
                     height: 44,
@@ -378,22 +406,27 @@ class _OrderCardState extends State<_OrderCard> {
                       color: color.withOpacity(0.12),
                       borderRadius: BorderRadius.circular(10),
                     ),
-                    child: Icon(Icons.biotech_rounded, color: color, size: 22),
+                    child: Icon(Icons.biotech_rounded,
+                        color: color, size: 22),
                   ),
                   const SizedBox(width: 12),
-                  // Order info
                   Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          o['order_id'] ?? o['id']?.toString() ?? 'Order',
+                          o['order_id'] ??
+                              o['id']?.toString() ??
+                              'Order',
                           style: const TextStyle(
-                              fontWeight: FontWeight.w700, fontSize: 14),
+                              fontWeight: FontWeight.w700,
+                              fontSize: 14),
                         ),
                         const SizedBox(height: 2),
                         Text(
-                          o['test_name'] ?? o['order_type'] ?? 'Lab Test',
+                          o['test_name'] ??
+                              o['order_type'] ??
+                              'Lab Test',
                           style: TextStyle(
                               fontSize: 13,
                               color: Colors.grey.shade600),
@@ -404,14 +437,14 @@ class _OrderCardState extends State<_OrderCard> {
                     ),
                   ),
                   const SizedBox(width: 8),
-                  // Status chip
                   Container(
                     padding: const EdgeInsets.symmetric(
                         horizontal: 10, vertical: 4),
                     decoration: BoxDecoration(
                       color: color.withOpacity(0.1),
                       borderRadius: BorderRadius.circular(20),
-                      border: Border.all(color: color.withOpacity(0.4)),
+                      border: Border.all(
+                          color: color.withOpacity(0.4)),
                     ),
                     child: Text(
                       widget.statusLabel(status).toUpperCase(),
@@ -433,8 +466,6 @@ class _OrderCardState extends State<_OrderCard> {
               ),
             ),
           ),
-
-          // ── Expandable details ───────────────────────────────────────────
           AnimatedCrossFade(
             firstChild: const SizedBox.shrink(),
             secondChild: _buildDetails(color),
@@ -451,28 +482,31 @@ class _OrderCardState extends State<_OrderCard> {
   Widget _buildDetails(Color color) {
     return Container(
       decoration: BoxDecoration(
-        border: Border(
-            top: BorderSide(color: Colors.grey.shade200)),
-      ),
+          border: Border(
+              top: BorderSide(color: Colors.grey.shade200))),
       padding: const EdgeInsets.fromLTRB(16, 12, 16, 16),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Detail rows
           _DetailRow(
             icon: Icons.person_outline,
             label: 'Doctor',
-            value: o['doctor']?['full_name'] ?? o['doctor_name'] ?? '—',
+            value: o['doctor']?['full_name'] ??
+                o['doctor_name'] ??
+                '—',
           ),
           _DetailRow(
             icon: Icons.personal_injury_outlined,
             label: 'Patient',
-            value: o['patient']?['full_name'] ?? o['patient_name'] ?? '—',
+            value: o['patient']?['full_name'] ??
+                o['patient_name'] ??
+                '—',
           ),
           _DetailRow(
             icon: Icons.calendar_today_outlined,
             label: 'Order Date',
-            value: _formatDate(o['created_at'] ?? o['order_date']),
+            value: _formatDate(
+                o['created_at'] ?? o['order_date']),
           ),
           if (o['due_date'] != null)
             _DetailRow(
@@ -487,7 +521,8 @@ class _OrderCardState extends State<_OrderCard> {
               value:
                   '\u20b9${(o['amount'] ?? o['total_amount']).toString()}',
             ),
-          if (o['notes'] != null && o['notes'].toString().isNotEmpty)
+          if (o['notes'] != null &&
+              o['notes'].toString().isNotEmpty)
             _DetailRow(
               icon: Icons.notes_outlined,
               label: 'Notes',
@@ -498,11 +533,13 @@ class _OrderCardState extends State<_OrderCard> {
             _DetailRow(
               icon: Icons.local_shipping_outlined,
               label: 'Delivery',
-              value: o['delivery_required'] == true ? 'Required' : 'Not required',
+              value: o['delivery_required'] == true
+                  ? 'Required'
+                  : 'Not required',
             ),
-
-          // ── Action buttons ─────────────────────────────────────────────
-          if (!_updating) _buildActions() else
+          if (!_updating)
+            _buildActions()
+          else
             const Padding(
               padding: EdgeInsets.only(top: 12),
               child: Center(
@@ -535,7 +572,8 @@ class _OrderCardState extends State<_OrderCard> {
                 label: const Text('Start'),
                 style: OutlinedButton.styleFrom(
                   foregroundColor: AppConstants.primaryColor,
-                  side: const BorderSide(color: AppConstants.primaryColor),
+                  side: const BorderSide(
+                      color: AppConstants.primaryColor),
                   shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(10)),
                 ),
@@ -559,7 +597,6 @@ class _OrderCardState extends State<_OrderCard> {
         ),
       );
     }
-
     if (status == 'in_progress') {
       return Padding(
         padding: const EdgeInsets.only(top: 12),
@@ -579,8 +616,6 @@ class _OrderCardState extends State<_OrderCard> {
         ),
       );
     }
-
-    // completed / cancelled — no actions
     return const SizedBox.shrink();
   }
 }
@@ -605,8 +640,9 @@ class _DetailRow extends StatelessWidget {
     return Padding(
       padding: const EdgeInsets.only(bottom: 8),
       child: Row(
-        crossAxisAlignment:
-            multiline ? CrossAxisAlignment.start : CrossAxisAlignment.center,
+        crossAxisAlignment: multiline
+            ? CrossAxisAlignment.start
+            : CrossAxisAlignment.center,
         children: [
           Icon(icon, size: 15, color: Colors.grey.shade500),
           const SizedBox(width: 8),

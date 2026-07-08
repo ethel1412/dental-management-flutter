@@ -5,8 +5,12 @@ import '../../utils/constants.dart';
 import '../auth/login_screen.dart';
 import 'appointments_screen.dart';
 import 'doctor_profile_screen.dart';
-import 'clinical_profile_screen.dart';
 import 'xray_analysis_screen.dart';
+
+// NOTE: ClinicalProfileScreen requires a patientId + patientName, so it
+// is opened from the Patients list, not directly from the dashboard.
+// The dashboard "Clinical Records" card opens Appointments instead as a
+// sensible default until a patient-search flow is added.
 
 class DoctorDashboardScreen extends StatelessWidget {
   const DoctorDashboardScreen({super.key});
@@ -120,7 +124,6 @@ class DoctorDashboardScreen extends StatelessWidget {
                         fontSize: 16, fontWeight: FontWeight.w600)),
               ),
 
-              // Feature grid
               GridView.count(
                 shrinkWrap: true,
                 physics: const NeverScrollableScrollPhysics(),
@@ -150,13 +153,9 @@ class DoctorDashboardScreen extends StatelessWidget {
                   _buildFeatureCard(
                     context,
                     icon: Icons.medical_information,
-                    title: 'Clinical Profile',
+                    title: 'Clinical Records',
                     color: Colors.orange,
-                    onTap: () => Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                          builder: (_) => const ClinicalProfileScreen()),
-                    ),
+                    onTap: () => _comingSoon(context, 'Clinical Records — open from a patient\'s profile'),
                   ),
                   _buildFeatureCard(
                     context,
@@ -200,11 +199,11 @@ class DoctorDashboardScreen extends StatelessWidget {
   void _comingSoon(BuildContext context, String feature) {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content: Text('$feature — coming soon!'),
+        content: Text(feature),
         behavior: SnackBarBehavior.floating,
         shape:
             RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-        duration: const Duration(seconds: 2),
+        duration: const Duration(seconds: 3),
       ),
     );
   }
