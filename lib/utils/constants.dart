@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 
 class AppConstants {
   // App Info
-  static const String appName = 'Dental Management';
+  static const String appName = 'ScanMyTooth';
   static const String appVersion = '1.0.0';
 
   // User Roles
