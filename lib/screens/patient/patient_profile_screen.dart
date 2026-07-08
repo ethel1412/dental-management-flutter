@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
@@ -27,6 +28,8 @@ class _PatientProfileScreenState extends State<PatientProfileScreen> {
   late TextEditingController _addressCtrl;
   String _gender = 'male';
 
+  static const _timeout = Duration(seconds: 30);
+
   @override
   void initState() {
     super.initState();
@@ -49,10 +52,7 @@ class _PatientProfileScreenState extends State<PatientProfileScreen> {
   }
 
   Future<void> _fetchProfile() async {
-    setState(() {
-      _isLoading = true;
-      _error = null;
-    });
+    setState(() { _isLoading = true; _error = null; });
     try {
       final prefs = await SharedPreferences.getInstance();
       final token = prefs.getString(AppConstants.keyToken);
@@ -62,22 +62,35 @@ class _PatientProfileScreenState extends State<PatientProfileScreen> {
           'Authorization': 'Bearer $token',
           'Content-Type': 'application/json',
         },
-      );
-      if (response.statusCode == 200) {
-        final data = jsonDecode(response.body);
-        _populate(data);
+      ).timeout(_timeout);
+
+      Map<String, dynamic> body;
+      try {
+        body = jsonDecode(response.body) as Map<String, dynamic>;
+      } catch (_) {
         setState(() {
-          _profile = data;
+          _error = response.statusCode >= 200 && response.statusCode < 300
+              ? 'Unexpected server response. Please try again.'
+              : 'Server error (${response.statusCode}). Try again in a moment.';
           _isLoading = false;
         });
+        return;
+      }
+
+      if (response.statusCode == 200) {
+        _populate(body);
+        setState(() { _profile = body; _isLoading = false; });
       } else {
-        final body = jsonDecode(response.body);
         setState(() {
-          _error =
-              body['detail'] ?? body['message'] ?? 'Failed to load profile';
+          _error = body['detail'] ?? body['message'] ?? 'Failed to load profile';
           _isLoading = false;
         });
       }
+    } on TimeoutException {
+      setState(() {
+        _error = 'Request timed out. The server may be starting up — please retry.';
+        _isLoading = false;
+      });
     } catch (e) {
       setState(() {
         _error = 'Network error. Please check your connection.';
@@ -101,7 +114,7 @@ class _PatientProfileScreenState extends State<PatientProfileScreen> {
     try {
       final prefs = await SharedPreferences.getInstance();
       final token = prefs.getString(AppConstants.keyToken);
-      final body = {
+      final bodyMap = {
         'full_name': _nameCtrl.text.trim(),
         'age': int.tryParse(_ageCtrl.text.trim()),
         'email': _emailCtrl.text.trim(),
@@ -115,31 +128,37 @@ class _PatientProfileScreenState extends State<PatientProfileScreen> {
           'Authorization': 'Bearer $token',
           'Content-Type': 'application/json',
         },
-        body: jsonEncode(body),
-      );
+        body: jsonEncode(bodyMap),
+      ).timeout(_timeout);
+
+      Map<String, dynamic> resBody;
+      try {
+        resBody = jsonDecode(response.body) as Map<String, dynamic>;
+      } catch (_) {
+        _showError('Unexpected server response.');
+        setState(() => _isSaving = false);
+        return;
+      }
+
       if (response.statusCode == 200) {
-        final updated = jsonDecode(response.body);
-        _populate(updated);
-        setState(() {
-          _profile = updated;
-          _isEditing = false;
-          _isSaving = false;
-        });
+        _populate(resBody);
+        setState(() { _profile = resBody; _isEditing = false; _isSaving = false; });
         if (!mounted) return;
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: const Text('Profile updated successfully'),
             backgroundColor: AppConstants.secondaryColor,
             behavior: SnackBarBehavior.floating,
-            shape:
-                RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
           ),
         );
       } else {
-        final err = jsonDecode(response.body);
-        _showError(err['detail'] ?? err['message'] ?? 'Failed to save');
+        _showError(resBody['detail'] ?? resBody['message'] ?? 'Failed to save');
         setState(() => _isSaving = false);
       }
+    } on TimeoutException {
+      _showError('Request timed out. Please try again.');
+      setState(() => _isSaving = false);
     } catch (e) {
       _showError('Network error.');
       setState(() => _isSaving = false);
@@ -147,13 +166,13 @@ class _PatientProfileScreenState extends State<PatientProfileScreen> {
   }
 
   void _showError(String msg) {
+    if (!mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(msg),
         backgroundColor: AppConstants.errorColor,
         behavior: SnackBarBehavior.floating,
-        shape:
-            RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
       ),
     );
   }
@@ -187,16 +206,16 @@ class _PatientProfileScreenState extends State<PatientProfileScreen> {
           if (_isEditing)
             TextButton(
               onPressed: _cancelEdit,
-              child:
-                  const Text('Cancel', style: TextStyle(color: Colors.white)),
+              child: const Text('Cancel',
+                  style: TextStyle(color: Colors.white)),
             ),
         ],
       ),
       body: _isLoading
           ? const Center(
               child: CircularProgressIndicator(
-                valueColor:
-                    AlwaysStoppedAnimation<Color>(AppConstants.primaryColor),
+                valueColor: AlwaysStoppedAnimation<Color>(
+                    AppConstants.primaryColor),
               ),
             )
           : _error != null
@@ -207,7 +226,8 @@ class _PatientProfileScreenState extends State<PatientProfileScreen> {
                   child: SingleChildScrollView(
                     physics: const AlwaysScrollableScrollPhysics(),
                     padding: const EdgeInsets.all(16),
-                    child: _isEditing ? _buildEditForm() : _buildView(),
+                    child:
+                        _isEditing ? _buildEditForm() : _buildView(),
                   ),
                 ),
     );
@@ -220,7 +240,8 @@ class _PatientProfileScreenState extends State<PatientProfileScreen> {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(Icons.wifi_off_rounded, size: 64, color: Colors.grey.shade400),
+            Icon(Icons.wifi_off_rounded,
+                size: 64, color: Colors.grey.shade400),
             const SizedBox(height: 16),
             Text('Could not load profile',
                 style: TextStyle(
@@ -230,7 +251,8 @@ class _PatientProfileScreenState extends State<PatientProfileScreen> {
             const SizedBox(height: 6),
             Text(_error!,
                 textAlign: TextAlign.center,
-                style: TextStyle(fontSize: 13, color: Colors.grey.shade500)),
+                style: TextStyle(
+                    fontSize: 13, color: Colors.grey.shade500)),
             const SizedBox(height: 20),
             ElevatedButton.icon(
               onPressed: _fetchProfile,
@@ -256,11 +278,11 @@ class _PatientProfileScreenState extends State<PatientProfileScreen> {
       children: [
         Card(
           elevation: 3,
-          shape:
-              RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(16)),
           child: Padding(
-            padding:
-                const EdgeInsets.symmetric(vertical: 24, horizontal: 20),
+            padding: const EdgeInsets.symmetric(
+                vertical: 24, horizontal: 20),
             child: Column(
               children: [
                 CircleAvatar(
@@ -278,11 +300,13 @@ class _PatientProfileScreenState extends State<PatientProfileScreen> {
                 const SizedBox(height: 12),
                 Text(name,
                     style: const TextStyle(
-                        fontSize: 20, fontWeight: FontWeight.bold)),
+                        fontSize: 20,
+                        fontWeight: FontWeight.bold)),
                 const SizedBox(height: 4),
                 const Text('Patient',
                     style: TextStyle(
-                        fontSize: 14, color: AppConstants.primaryColor)),
+                        fontSize: 14,
+                        color: AppConstants.primaryColor)),
               ],
             ),
           ),
@@ -290,8 +314,8 @@ class _PatientProfileScreenState extends State<PatientProfileScreen> {
         const SizedBox(height: 14),
         Card(
           elevation: 2,
-          shape:
-              RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+          shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(14)),
           child: Padding(
             padding: const EdgeInsets.all(16),
             child: Column(
@@ -300,24 +324,27 @@ class _PatientProfileScreenState extends State<PatientProfileScreen> {
                 const Row(
                   children: [
                     Icon(Icons.person_outline,
-                        size: 18, color: AppConstants.primaryColor),
+                        size: 18,
+                        color: AppConstants.primaryColor),
                     SizedBox(width: 8),
                     Text('Personal Info',
                         style: TextStyle(
-                            fontSize: 15, fontWeight: FontWeight.bold)),
+                            fontSize: 15,
+                            fontWeight: FontWeight.bold)),
                   ],
                 ),
                 const Divider(height: 18),
                 _infoRow(Icons.badge_outlined, 'Name', name),
+                _infoRow(Icons.cake_outlined, 'Age',
+                    p['age']?.toString() ?? '—'),
                 _infoRow(
-                    Icons.cake_outlined, 'Age', p['age']?.toString() ?? '—'),
-                _infoRow(Icons.wc_outlined, 'Gender', p['gender'] ?? '—'),
-                _infoRow(
-                    Icons.email_outlined, 'Email', p['email'] ?? '—'),
+                    Icons.wc_outlined, 'Gender', p['gender'] ?? '—'),
+                _infoRow(Icons.email_outlined, 'Email',
+                    p['email'] ?? '—'),
                 _infoRow(Icons.phone_outlined, 'Phone',
                     p['phone'] ?? p['mobile'] ?? '—'),
-                _infoRow(
-                    Icons.home_outlined, 'Address', p['address'] ?? '—'),
+                _infoRow(Icons.home_outlined, 'Address',
+                    p['address'] ?? '—'),
               ],
             ),
           ),
@@ -389,15 +416,17 @@ class _PatientProfileScreenState extends State<PatientProfileScreen> {
                 children: [
                   const Text('Personal Information',
                       style: TextStyle(
-                          fontSize: 14, fontWeight: FontWeight.bold)),
+                          fontSize: 14,
+                          fontWeight: FontWeight.bold)),
                   const SizedBox(height: 14),
                   _field(
                     ctrl: _nameCtrl,
                     label: 'Full Name',
                     icon: Icons.person_outline,
-                    validator: (v) => v == null || v.trim().isEmpty
-                        ? 'Name is required'
-                        : null,
+                    validator: (v) =>
+                        v == null || v.trim().isEmpty
+                            ? 'Name is required'
+                            : null,
                   ),
                   _field(
                     ctrl: _ageCtrl,
@@ -470,8 +499,8 @@ class _PatientProfileScreenState extends State<PatientProfileScreen> {
                       width: 22,
                       child: CircularProgressIndicator(
                         strokeWidth: 2.5,
-                        valueColor:
-                            AlwaysStoppedAnimation<Color>(Colors.white),
+                        valueColor: AlwaysStoppedAnimation<Color>(
+                            Colors.white),
                       ),
                     )
                   : const Text('Save Changes'),

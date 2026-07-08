@@ -1,6 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:http/http.dart' as http;
+import 'dart:convert';
 import '../../providers/auth_provider.dart';
+import '../../services/storage_service.dart';
+import '../../config/api_config.dart';
 import '../../utils/constants.dart';
 import '../auth/login_screen.dart';
 import 'xray_analysis_screen.dart';
@@ -10,16 +14,68 @@ import 'patient_appointments_screen.dart';
 import 'patient_medical_records_screen.dart';
 import 'patient_lab_orders_screen.dart';
 
-class PatientDashboardScreen extends StatelessWidget {
+class PatientDashboardScreen extends StatefulWidget {
   const PatientDashboardScreen({super.key});
 
   @override
-  Widget build(BuildContext context) {
-    final userData = context.watch<AuthProvider>().userData;
-    final name = userData?['name'] as String? ??
-        userData?['full_name'] as String? ??
-        'Patient';
+  State<PatientDashboardScreen> createState() =>
+      _PatientDashboardScreenState();
+}
 
+class _PatientDashboardScreenState extends State<PatientDashboardScreen> {
+  String _patientName = 'Patient';
+  bool _nameLoaded = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadPatientName();
+  }
+
+  Future<void> _loadPatientName() async {
+    try {
+      final storage = StorageService();
+      final token = await storage.getToken();
+      if (token == null) return;
+
+      final uri =
+          Uri.parse('${ApiConfig.baseUrl}${ApiConfig.patientProfile}');
+      final response = await http.get(uri, headers: {
+        'Authorization': 'Bearer $token',
+        'Content-Type': 'application/json',
+      }).timeout(const Duration(seconds: 30));
+
+      if (response.statusCode == 200) {
+        Map<String, dynamic> data;
+        try {
+          data = jsonDecode(response.body) as Map<String, dynamic>;
+        } catch (_) {
+          return;
+        }
+        final name = data['full_name']?.toString() ??
+            data['name']?.toString() ?? '';
+        if (name.isNotEmpty && mounted) {
+          setState(() {
+            _patientName = name;
+            _nameLoaded = true;
+          });
+        }
+      }
+    } catch (_) {
+      // Fallback: use AuthProvider userData if available
+      if (!mounted) return;
+      final userData = context.read<AuthProvider>().userData;
+      final fallback = userData?['full_name']?.toString() ??
+          userData?['name']?.toString() ?? 'Patient';
+      setState(() {
+        _patientName = fallback;
+        _nameLoaded = true;
+      });
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: const Color(0xFFF8F9FF),
       appBar: AppBar(
@@ -31,11 +87,14 @@ class PatientDashboardScreen extends StatelessWidget {
           IconButton(
             icon: const Icon(Icons.person_outline),
             tooltip: 'My Profile',
-            onPressed: () => Navigator.push(
-              context,
-              MaterialPageRoute(
-                  builder: (_) => const PatientProfileScreen()),
-            ),
+            onPressed: () async {
+              await Navigator.push(
+                context,
+                MaterialPageRoute(
+                    builder: (_) => const PatientProfileScreen()),
+              );
+              _loadPatientName(); // refresh name after profile edit
+            },
           ),
           IconButton(
             icon: const Icon(Icons.logout),
@@ -80,25 +139,30 @@ class PatientDashboardScreen extends StatelessWidget {
                           radius: 32,
                           backgroundColor:
                               Colors.white.withOpacity(0.2),
-                          child: Text(
-                            name.isNotEmpty
-                                ? name[0].toUpperCase()
-                                : 'P',
-                            style: const TextStyle(
-                                fontSize: 26,
-                                fontWeight: FontWeight.bold,
-                                color: Colors.white),
-                          ),
+                          child: _nameLoaded
+                              ? Text(
+                                  _patientName[0].toUpperCase(),
+                                  style: const TextStyle(
+                                      fontSize: 26,
+                                      fontWeight: FontWeight.bold,
+                                      color: Colors.white),
+                                )
+                              : const SizedBox(
+                                  width: 22,
+                                  height: 22,
+                                  child: CircularProgressIndicator(
+                                      color: Colors.white,
+                                      strokeWidth: 2),
+                                ),
                         ),
                       ),
                       const SizedBox(width: 16),
                       Expanded(
                         child: Column(
-                          crossAxisAlignment:
-                              CrossAxisAlignment.start,
+                          crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(
-                              'Hello, $name!',
+                              'Hello, $_patientName!',
                               style: const TextStyle(
                                   fontSize: 20,
                                   fontWeight: FontWeight.bold,
@@ -207,8 +271,8 @@ class PatientDashboardScreen extends StatelessWidget {
       ),
       child: Card(
         elevation: 4,
-        shape:
-            RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16)),
         clipBehavior: Clip.antiAlias,
         child: Container(
           decoration: const BoxDecoration(
@@ -270,8 +334,8 @@ class PatientDashboardScreen extends StatelessWidget {
   }) {
     return Card(
       elevation: 2,
-      shape:
-          RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+      shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(14)),
       child: InkWell(
         onTap: onTap,
         borderRadius: BorderRadius.circular(14),

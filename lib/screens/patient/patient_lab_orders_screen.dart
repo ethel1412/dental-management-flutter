@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
@@ -20,6 +21,8 @@ class _PatientLabOrdersScreenState extends State<PatientLabOrdersScreen>
   bool _isLoading = true;
   String? _error;
 
+  static const _timeout = Duration(seconds: 30);
+
   static const _tabs = [
     {'label': 'All', 'status': null},
     {'label': 'Pending', 'status': 'pending'},
@@ -31,8 +34,7 @@ class _PatientLabOrdersScreenState extends State<PatientLabOrdersScreen>
   @override
   void initState() {
     super.initState();
-    _tabController =
-        TabController(length: _tabs.length, vsync: this);
+    _tabController = TabController(length: _tabs.length, vsync: this);
     _fetchOrders();
   }
 
@@ -43,54 +45,68 @@ class _PatientLabOrdersScreenState extends State<PatientLabOrdersScreen>
   }
 
   Future<void> _fetchOrders() async {
-    setState(() {
-      _isLoading = true;
-      _error = null;
-    });
+    setState(() { _isLoading = true; _error = null; });
     try {
       final prefs = await SharedPreferences.getInstance();
       final token = prefs.getString(AppConstants.keyToken);
-      // Patient-scoped lab orders endpoint
-      final response = await http.get(
-        Uri.parse('${ApiConfig.baseUrl}${ApiConfig.labOrders}/my-orders'),
-        headers: {
-          'Authorization': 'Bearer $token',
-          'Content-Type': 'application/json',
-        },
-      );
-      if (response.statusCode == 200) {
-        final data = jsonDecode(response.body);
-        setState(() {
-          _orders =
-              data is List ? data : (data['orders'] ?? data['lab_orders'] ?? []);
-          _isLoading = false;
-        });
-      } else if (response.statusCode == 404) {
-        // Fallback: try base endpoint if /my-orders doesn't exist yet
-        final r2 = await http.get(
-          Uri.parse('${ApiConfig.baseUrl}${ApiConfig.labOrders}'),
+
+      // Try patient-scoped endpoint first, fallback to base endpoint
+      http.Response response;
+      try {
+        response = await http.get(
+          Uri.parse('${ApiConfig.baseUrl}${ApiConfig.labOrders}/my-orders'),
           headers: {
             'Authorization': 'Bearer $token',
             'Content-Type': 'application/json',
           },
-        );
-        if (r2.statusCode == 200) {
-          final data = jsonDecode(r2.body);
+        ).timeout(_timeout);
+      } on TimeoutException {
+        setState(() {
+          _error = 'Request timed out. Server may be starting up — please retry.';
+          _isLoading = false;
+        });
+        return;
+      }
+
+      // If /my-orders doesn't exist, fall back to base endpoint
+      if (response.statusCode == 404 || response.statusCode == 405) {
+        try {
+          response = await http.get(
+            Uri.parse('${ApiConfig.baseUrl}${ApiConfig.labOrders}'),
+            headers: {
+              'Authorization': 'Bearer $token',
+              'Content-Type': 'application/json',
+            },
+          ).timeout(_timeout);
+        } on TimeoutException {
           setState(() {
-            _orders = data is List
-                ? data
-                : (data['orders'] ?? data['lab_orders'] ?? []);
+            _error = 'Request timed out. Server may be starting up — please retry.';
             _isLoading = false;
           });
-        } else {
-          setState(() {
-            _error = 'Failed to load lab orders';
-            _isLoading = false;
-          });
+          return;
         }
+      }
+
+      if (response.statusCode == 200) {
+        dynamic data;
+        try {
+          data = jsonDecode(response.body);
+        } catch (_) {
+          setState(() {
+            _error = 'Unexpected server response. Please try again.';
+            _isLoading = false;
+          });
+          return;
+        }
+        setState(() {
+          _orders = data is List
+              ? data
+              : (data['orders'] ?? data['lab_orders'] ?? []);
+          _isLoading = false;
+        });
       } else {
         setState(() {
-          _error = 'Failed to load lab orders';
+          _error = 'Failed to load lab orders (${response.statusCode})';
           _isLoading = false;
         });
       }
@@ -109,25 +125,18 @@ class _PatientLabOrdersScreenState extends State<PatientLabOrdersScreen>
 
   Color _statusColor(String status) {
     switch (status) {
-      case 'pending':
-        return Colors.orange;
-      case 'in_progress':
-        return AppConstants.primaryColor;
-      case 'completed':
-        return AppConstants.secondaryColor;
-      case 'cancelled':
-        return AppConstants.errorColor;
-      default:
-        return Colors.grey;
+      case 'pending': return Colors.orange;
+      case 'in_progress': return AppConstants.primaryColor;
+      case 'completed': return AppConstants.secondaryColor;
+      case 'cancelled': return AppConstants.errorColor;
+      default: return Colors.grey;
     }
   }
 
   String _statusLabel(String status) {
     switch (status) {
-      case 'in_progress':
-        return 'In Progress';
-      default:
-        return status[0].toUpperCase() + status.substring(1);
+      case 'in_progress': return 'In Progress';
+      default: return status[0].toUpperCase() + status.substring(1);
     }
   }
 
@@ -193,8 +202,8 @@ class _PatientLabOrdersScreenState extends State<PatientLabOrdersScreen>
             const SizedBox(height: 6),
             Text(_error!,
                 textAlign: TextAlign.center,
-                style:
-                    TextStyle(fontSize: 13, color: Colors.grey.shade500)),
+                style: TextStyle(
+                    fontSize: 13, color: Colors.grey.shade500)),
             const SizedBox(height: 20),
             ElevatedButton.icon(
               onPressed: _fetchOrders,
@@ -277,9 +286,7 @@ class _LabOrderCardState extends State<_LabOrderCard> {
     try {
       final d = DateTime.parse(iso);
       return '${d.day.toString().padLeft(2, '0')}-${d.month.toString().padLeft(2, '0')}-${d.year}';
-    } catch (_) {
-      return iso;
-    }
+    } catch (_) { return iso; }
   }
 
   @override
@@ -288,8 +295,8 @@ class _LabOrderCardState extends State<_LabOrderCard> {
     return Card(
       elevation: 2,
       margin: const EdgeInsets.only(bottom: 12),
-      shape:
-          RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+      shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(14)),
       child: Column(
         children: [
           InkWell(
@@ -381,8 +388,8 @@ class _LabOrderCardState extends State<_LabOrderCard> {
   Widget _buildDetails() {
     return Container(
       decoration: BoxDecoration(
-          border:
-              Border(top: BorderSide(color: Colors.grey.shade200))),
+          border: Border(
+              top: BorderSide(color: Colors.grey.shade200))),
       padding: const EdgeInsets.fromLTRB(16, 12, 16, 16),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -397,11 +404,8 @@ class _LabOrderCardState extends State<_LabOrderCard> {
             _row(Icons.event_outlined, 'Due Date',
                 _formatDate(o['due_date'])),
           if (o['amount'] != null || o['total_amount'] != null)
-            _row(
-              Icons.currency_rupee,
-              'Amount',
-              '₹${(o['amount'] ?? o['total_amount']).toString()}',
-            ),
+            _row(Icons.currency_rupee, 'Amount',
+                '₹${(o['amount'] ?? o['total_amount']).toString()}'),
           if (o['notes'] != null &&
               o['notes'].toString().isNotEmpty)
             _row(Icons.notes_outlined, 'Notes',
@@ -423,7 +427,8 @@ class _LabOrderCardState extends State<_LabOrderCard> {
                   Row(
                     children: [
                       Icon(Icons.check_circle_outline,
-                          size: 16, color: Colors.green.shade700),
+                          size: 16,
+                          color: Colors.green.shade700),
                       const SizedBox(width: 6),
                       Text('Result',
                           style: TextStyle(
