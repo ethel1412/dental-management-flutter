@@ -6,6 +6,9 @@ import '../auth/login_screen.dart';
 import 'xray_analysis_screen.dart';
 import 'search_doctors_screen.dart';
 import 'patient_profile_screen.dart';
+import 'patient_appointments_screen.dart';
+import 'patient_medical_records_screen.dart';
+import 'patient_lab_orders_screen.dart';
 
 class PatientDashboardScreen extends StatelessWidget {
   const PatientDashboardScreen({super.key});
@@ -70,13 +73,17 @@ class PatientDashboardScreen extends StatelessWidget {
                         onTap: () => Navigator.push(
                           context,
                           MaterialPageRoute(
-                              builder: (_) => const PatientProfileScreen()),
+                              builder: (_) =>
+                                  const PatientProfileScreen()),
                         ),
                         child: CircleAvatar(
                           radius: 32,
-                          backgroundColor: Colors.white.withOpacity(0.2),
+                          backgroundColor:
+                              Colors.white.withOpacity(0.2),
                           child: Text(
-                            name.isNotEmpty ? name[0].toUpperCase() : 'P',
+                            name.isNotEmpty
+                                ? name[0].toUpperCase()
+                                : 'P',
                             style: const TextStyle(
                                 fontSize: 26,
                                 fontWeight: FontWeight.bold,
@@ -87,7 +94,8 @@ class PatientDashboardScreen extends StatelessWidget {
                       const SizedBox(width: 16),
                       Expanded(
                         child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
+                          crossAxisAlignment:
+                              CrossAxisAlignment.start,
                           children: [
                             Text(
                               'Hello, $name!',
@@ -100,7 +108,8 @@ class PatientDashboardScreen extends StatelessWidget {
                             const Text(
                               'How are you feeling today?',
                               style: TextStyle(
-                                  fontSize: 13, color: Colors.white70),
+                                  fontSize: 13,
+                                  color: Colors.white70),
                             ),
                           ],
                         ),
@@ -112,7 +121,7 @@ class PatientDashboardScreen extends StatelessWidget {
 
               const SizedBox(height: 20),
 
-              // AI X-ray CTA  —  the FEATURED action
+              // AI X-ray CTA
               _buildXrayCta(context),
 
               const SizedBox(height: 16),
@@ -121,10 +130,10 @@ class PatientDashboardScreen extends StatelessWidget {
                 padding: EdgeInsets.only(left: 4, bottom: 10),
                 child: Text('Quick Access',
                     style: TextStyle(
-                        fontSize: 16, fontWeight: FontWeight.w600)),
+                        fontSize: 16,
+                        fontWeight: FontWeight.w600)),
               ),
 
-              // Feature grid
               GridView.count(
                 shrinkWrap: true,
                 physics: const NeverScrollableScrollPhysics(),
@@ -141,7 +150,8 @@ class PatientDashboardScreen extends StatelessWidget {
                     onTap: () => Navigator.push(
                       context,
                       MaterialPageRoute(
-                          builder: (_) => const SearchDoctorsScreen()),
+                          builder: (_) =>
+                              const SearchDoctorsScreen()),
                     ),
                   ),
                   _buildFeatureCard(
@@ -149,38 +159,42 @@ class PatientDashboardScreen extends StatelessWidget {
                     icon: Icons.calendar_today,
                     title: 'Appointments',
                     color: Colors.green,
-                    onTap: () => _comingSoon(context, 'Appointments'),
+                    onTap: () => Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                          builder: (_) =>
+                              const PatientAppointmentsScreen()),
+                    ),
                   ),
                   _buildFeatureCard(
                     context,
                     icon: Icons.medical_information,
                     title: 'Medical Records',
                     color: Colors.orange,
-                    onTap: () => _comingSoon(context, 'Medical Records'),
+                    onTap: () => Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                          builder: (_) =>
+                              const PatientMedicalRecordsScreen()),
+                    ),
                   ),
                   _buildFeatureCard(
                     context,
                     icon: Icons.science,
                     title: 'Lab Orders',
                     color: Colors.purple,
-                    onTap: () => _comingSoon(context, 'Lab Orders'),
+                    onTap: () => Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                          builder: (_) =>
+                              const PatientLabOrdersScreen()),
+                    ),
                   ),
                 ],
               ),
             ],
           ),
         ),
-      ),
-    );
-  }
-
-  void _comingSoon(BuildContext context, String feature) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text('$feature — coming soon!'),
-        behavior: SnackBarBehavior.floating,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-        duration: const Duration(seconds: 2),
       ),
     );
   }
@@ -231,8 +245,8 @@ class PatientDashboardScreen extends StatelessWidget {
                     SizedBox(height: 4),
                     Text(
                       'Upload your dental X-ray and get instant AI-powered analysis with per-tooth diagnosis.',
-                      style:
-                          TextStyle(fontSize: 12.5, color: Colors.white70),
+                      style: TextStyle(
+                          fontSize: 12.5, color: Colors.white70),
                     ),
                   ],
                 ),
@@ -256,7 +270,8 @@ class PatientDashboardScreen extends StatelessWidget {
   }) {
     return Card(
       elevation: 2,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+      shape:
+          RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
       child: InkWell(
         onTap: onTap,
         borderRadius: BorderRadius.circular(14),
