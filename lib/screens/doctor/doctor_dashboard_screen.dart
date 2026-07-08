@@ -6,6 +6,8 @@ import '../auth/login_screen.dart';
 import 'appointments_screen.dart';
 import 'doctor_profile_screen.dart';
 import 'xray_analysis_screen.dart';
+import 'doctor_patients_screen.dart';
+import 'doctor_clinics_screen.dart';
 
 class DoctorDashboardScreen extends StatelessWidget {
   const DoctorDashboardScreen({super.key});
@@ -46,6 +48,7 @@ class DoctorDashboardScreen extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
+              // Welcome card
               Card(
                 elevation: 4,
                 shape: RoundedRectangleBorder(
@@ -139,16 +142,11 @@ class DoctorDashboardScreen extends StatelessWidget {
                     icon: Icons.people,
                     title: 'My Patients',
                     color: Colors.green,
-                    onTap: () => _comingSoon(context, 'My Patients'),
-                  ),
-                  _buildFeatureCard(
-                    context,
-                    icon: Icons.medical_information,
-                    title: 'Clinical Records',
-                    color: Colors.orange,
-                    onTap: () => _comingSoon(
-                        context,
-                        'Clinical Records — open from a patient profile'),
+                    onTap: () => Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                          builder: (_) => const DoctorPatientsScreen()),
+                    ),
                   ),
                   _buildFeatureCard(
                     context,
@@ -166,7 +164,22 @@ class DoctorDashboardScreen extends StatelessWidget {
                     icon: Icons.business,
                     title: 'My Clinics',
                     color: Colors.teal,
-                    onTap: () => _comingSoon(context, 'My Clinics'),
+                    onTap: () => Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                          builder: (_) => const DoctorClinicsScreen()),
+                    ),
+                  ),
+                  _buildFeatureCard(
+                    context,
+                    icon: Icons.medical_information,
+                    title: 'Clinical Records',
+                    color: Colors.orange,
+                    onTap: () => Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                          builder: (_) => const DoctorPatientsScreen()),
+                    ),
                   ),
                   _buildFeatureCard(
                     context,
@@ -185,18 +198,6 @@ class DoctorDashboardScreen extends StatelessWidget {
             ],
           ),
         ),
-      ),
-    );
-  }
-
-  void _comingSoon(BuildContext context, String feature) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(feature),
-        behavior: SnackBarBehavior.floating,
-        shape:
-            RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-        duration: const Duration(seconds: 3),
       ),
     );
   }

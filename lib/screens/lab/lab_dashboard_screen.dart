@@ -5,6 +5,8 @@ import '../../utils/constants.dart';
 import '../auth/login_screen.dart';
 import 'orders_screen.dart';
 import 'lab_profile_screen.dart';
+import 'lab_reports_screen.dart';
+import 'lab_services_screen.dart';
 
 class LabDashboardScreen extends StatelessWidget {
   const LabDashboardScreen({super.key});
@@ -45,6 +47,7 @@ class LabDashboardScreen extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
+              // Welcome card
               Card(
                 elevation: 4,
                 shape: RoundedRectangleBorder(
@@ -163,14 +166,22 @@ class LabDashboardScreen extends StatelessWidget {
                     icon: Icons.bar_chart,
                     title: 'Reports',
                     color: Colors.purple,
-                    onTap: () => _comingSoon(context, 'Reports'),
+                    onTap: () => Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                          builder: (_) => const LabReportsScreen()),
+                    ),
                   ),
                   _buildFeatureCard(
                     context,
                     icon: Icons.settings,
                     title: 'Services',
                     color: Colors.teal,
-                    onTap: () => _comingSoon(context, 'Services'),
+                    onTap: () => Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                          builder: (_) => const LabServicesScreen()),
+                    ),
                   ),
                   _buildFeatureCard(
                     context,
@@ -189,18 +200,6 @@ class LabDashboardScreen extends StatelessWidget {
             ],
           ),
         ),
-      ),
-    );
-  }
-
-  void _comingSoon(BuildContext context, String feature) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text('$feature — coming soon!'),
-        behavior: SnackBarBehavior.floating,
-        shape:
-            RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-        duration: const Duration(seconds: 2),
       ),
     );
   }
