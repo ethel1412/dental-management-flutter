@@ -6,7 +6,7 @@ import '../../config/api_config.dart';
 import '../../utils/constants.dart';
 
 class ClinicalProfileScreen extends StatefulWidget {
-  final int patientId;
+  final String patientId;
   final String patientName;
 
   const ClinicalProfileScreen({
@@ -190,7 +190,7 @@ class _ClinicalProfileScreenState extends State<ClinicalProfileScreen> {
           'Content-Type': 'application/json',
         },
         body: jsonEncode({
-          'patient_id': widget.patientId,
+          'patient_id': int.tryParse(widget.patientId) ?? widget.patientId,
           'primary_complaint': primaryComplaint,
           'provisional_diagnosis': provisionalDiagnosis,
           'treatment_phase_1': treatmentPhase1,
@@ -309,7 +309,7 @@ class _ClinicalProfileScreenState extends State<ClinicalProfileScreen> {
                                 ),
                               ),
                               title: Text(
-                                p['profile_id'] ?? 'Record',
+                                p['profile_id']?.toString() ?? 'Record',
                                 style: const TextStyle(
                                     fontWeight: FontWeight.bold),
                               ),
