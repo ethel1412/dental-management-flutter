@@ -14,23 +14,14 @@ class DoctorClinicsScreen extends StatefulWidget {
 
 class _DoctorClinicsScreenState extends State<DoctorClinicsScreen> {
   Map<String, dynamic>? _profile;
+  List<dynamic> _clinics = [];
   bool _isLoading = true;
   String? _error;
-
-  // Edit controllers for clinic hours
-  final _notesCtrl = TextEditingController();
-  bool _isSaving = false;
 
   @override
   void initState() {
     super.initState();
     _fetchProfile();
-  }
-
-  @override
-  void dispose() {
-    _notesCtrl.dispose();
-    super.dispose();
   }
 
   Future<void> _fetchProfile() async {
@@ -41,35 +32,23 @@ class _DoctorClinicsScreenState extends State<DoctorClinicsScreen> {
       final response = await http.get(
         Uri.parse('${ApiConfig.baseUrl}${ApiConfig.doctorProfile}'),
         headers: {
-          'Authorization': 'Bearer \$token',
+          'Authorization': 'Bearer $token',
           'Content-Type': 'application/json',
         },
       );
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
+        final profile = data['doctor'] ?? data['profile'] ?? data;
         setState(() {
-          _profile = data is Map ? data['doctor'] ?? data : null;
+          _profile = profile as Map<String, dynamic>?;
+          _clinics = profile['clinics'] ?? profile['clinic_addresses'] ?? [];
           _isLoading = false;
         });
       } else {
         setState(() { _error = 'Failed to load clinic info'; _isLoading = false; });
       }
-    } catch (_) {
-      setState(() { _error = 'Network error.'; _isLoading = false; });
-    }
-  }
-
-  String _formatTime(String? t) {
-    if (t == null || t.isEmpty) return '—';
-    try {
-      final parts = t.split(':');
-      final h = int.parse(parts[0]);
-      final m = parts.length > 1 ? parts[1] : '00';
-      final period = h >= 12 ? 'PM' : 'AM';
-      final hour = h > 12 ? h - 12 : (h == 0 ? 12 : h);
-      return '\$hour:\$m \$period';
-    } catch (_) {
-      return t;
+    } catch (e) {
+      setState(() { _error = 'Network error. Please check your connection.'; _isLoading = false; });
     }
   }
 
@@ -78,7 +57,7 @@ class _DoctorClinicsScreenState extends State<DoctorClinicsScreen> {
     return Scaffold(
       backgroundColor: AppConstants.backgroundColor,
       appBar: AppBar(
-        title: const Text('My Clinics & Hours'),
+        title: const Text('My Clinics'),
         backgroundColor: AppConstants.primaryColor,
         foregroundColor: Colors.white,
         elevation: 0,
@@ -87,14 +66,186 @@ class _DoctorClinicsScreenState extends State<DoctorClinicsScreen> {
         ],
       ),
       body: _isLoading
-          ? const Center(
-              child: CircularProgressIndicator(
-                valueColor: AlwaysStoppedAnimation<Color>(AppConstants.primaryColor),
-              ),
-            )
+          ? const Center(child: CircularProgressIndicator(valueColor: AlwaysStoppedAnimation<Color>(AppConstants.primaryColor)))
           : _error != null
               ? _buildError()
-              : _buildContent(),
+              : RefreshIndicator(
+                  onRefresh: _fetchProfile,
+                  color: AppConstants.primaryColor,
+                  child: ListView(
+                    padding: const EdgeInsets.all(16),
+                    children: [
+                      // Doctor summary card
+                      if (_profile != null) _buildDoctorSummary(),
+                      const SizedBox(height: 16),
+                      // Section header
+                      Row(
+                        children: [
+                          const Icon(Icons.business, size: 18, color: AppConstants.primaryColor),
+                          const SizedBox(width: 8),
+                          Text(
+                            'Clinic Locations (${_clinics.length})',
+                            style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w700, color: AppConstants.primaryColor),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 12),
+                      if (_clinics.isEmpty)
+                        _buildNoClinics()
+                      else
+                        ...List.generate(_clinics.length, (i) => _ClinicCard(clinic: _clinics[i], index: i)),
+                      const SizedBox(height: 20),
+                      // Availability info
+                      if (_profile != null) _buildAvailability(),
+                    ],
+                  ),
+                ),
+    );
+  }
+
+  Widget _buildDoctorSummary() {
+    final p = _profile!;
+    final name = p['full_name'] ?? p['name'] ?? 'Doctor';
+    final spec = p['specialization'] ?? '';
+    final exp = p['experience_years']?.toString() ?? '';
+    final qual = p['qualifications'] ?? p['qualification'] ?? '';
+
+    return Card(
+      elevation: 3,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      child: Container(
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(16),
+          gradient: LinearGradient(
+            colors: [AppConstants.primaryColor, AppConstants.primaryColor.withBlue(160)],
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+          ),
+        ),
+        padding: const EdgeInsets.all(18),
+        child: Row(
+          children: [
+            CircleAvatar(
+              radius: 28,
+              backgroundColor: Colors.white.withOpacity(0.2),
+              child: Text(
+                name.isNotEmpty ? name[0].toUpperCase() : 'D',
+                style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: Colors.white),
+              ),
+            ),
+            const SizedBox(width: 14),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text('Dr. $name', style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.white)),
+                  if (spec.isNotEmpty) Text(spec, style: const TextStyle(fontSize: 12, color: Colors.white70)),
+                  const SizedBox(height: 4),
+                  Row(
+                    children: [
+                      if (exp.isNotEmpty) _chip('$exp yrs exp'),
+                      if (qual.isNotEmpty) ...[const SizedBox(width: 6), _chip(qual.toString())],
+                    ],
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _chip(String text) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+      decoration: BoxDecoration(
+        color: Colors.white.withOpacity(0.18),
+        borderRadius: BorderRadius.circular(20),
+      ),
+      child: Text(text, style: const TextStyle(fontSize: 11, color: Colors.white, fontWeight: FontWeight.w500)),
+    );
+  }
+
+  Widget _buildAvailability() {
+    final p = _profile!;
+    final days = p['available_days'] ?? p['working_days'] ?? [];
+    final start = p['available_time_start'] ?? p['start_time'] ?? '';
+    final end = p['available_time_end'] ?? p['end_time'] ?? '';
+    final offlineFee = p['offline_consultation_fee']?.toString() ?? p['consultation_fee']?.toString() ?? '';
+    final onlineFee = p['online_consultation_fee']?.toString() ?? '';
+    final isOnline = p['online_consultation_available'] ?? p['is_online'] ?? false;
+
+    return Card(
+      elevation: 1,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                const Icon(Icons.schedule, size: 17, color: AppConstants.primaryColor),
+                const SizedBox(width: 8),
+                const Text('Availability', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w700, color: AppConstants.primaryColor)),
+              ],
+            ),
+            const SizedBox(height: 12),
+            if (days is List && (days as List).isNotEmpty)
+              _avRow(Icons.calendar_today_outlined, 'Working Days', (days as List).join(', ')),
+            if (start.isNotEmpty || end.isNotEmpty)
+              _avRow(Icons.access_time_outlined, 'Hours', '$start – $end'),
+            if (offlineFee.isNotEmpty)
+              _avRow(Icons.local_hospital_outlined, 'Offline Fee', '₹$offlineFee'),
+            if (isOnline == true && onlineFee.isNotEmpty)
+              _avRow(Icons.videocam_outlined, 'Online Fee', '₹$onlineFee'),
+            if (isOnline == true)
+              Padding(
+                padding: const EdgeInsets.only(top: 6),
+                child: Row(
+                  children: [
+                    Icon(Icons.check_circle, size: 15, color: Colors.green.shade600),
+                    const SizedBox(width: 6),
+                    Text('Online consultations available', style: TextStyle(fontSize: 12, color: Colors.green.shade700)),
+                  ],
+                ),
+              ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _avRow(IconData icon, String label, String value) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 8),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Icon(icon, size: 14, color: Colors.grey.shade500),
+          const SizedBox(width: 8),
+          SizedBox(width: 90, child: Text(label, style: TextStyle(fontSize: 12, color: Colors.grey.shade500, fontWeight: FontWeight.w500))),
+          Expanded(child: Text(value, style: const TextStyle(fontSize: 13, color: AppConstants.textPrimaryColor, fontWeight: FontWeight.w500))),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildNoClinics() {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: 32),
+        child: Column(
+          children: [
+            Icon(Icons.business_outlined, size: 64, color: Colors.grey.shade300),
+            const SizedBox(height: 12),
+            Text('No clinic addresses added', style: TextStyle(color: Colors.grey.shade600, fontSize: 15, fontWeight: FontWeight.w600)),
+            const SizedBox(height: 6),
+            Text('Update your profile to add clinic locations.', textAlign: TextAlign.center, style: TextStyle(color: Colors.grey.shade400, fontSize: 13)),
+          ],
+        ),
+      ),
     );
   }
 
@@ -107,12 +258,9 @@ class _DoctorClinicsScreenState extends State<DoctorClinicsScreen> {
           children: [
             Icon(Icons.wifi_off_rounded, size: 64, color: Colors.grey.shade400),
             const SizedBox(height: 16),
-            Text('Could not load clinic info',
-                style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600,
-                    color: Colors.grey.shade700)),
+            Text('Could not load clinic info', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600, color: Colors.grey.shade700)),
             const SizedBox(height: 6),
-            Text(_error!, textAlign: TextAlign.center,
-                style: TextStyle(fontSize: 13, color: Colors.grey.shade500)),
+            Text(_error!, textAlign: TextAlign.center, style: TextStyle(fontSize: 13, color: Colors.grey.shade500)),
             const SizedBox(height: 20),
             ElevatedButton.icon(
               onPressed: _fetchProfile,
@@ -129,279 +277,76 @@ class _DoctorClinicsScreenState extends State<DoctorClinicsScreen> {
       ),
     );
   }
+}
 
-  Widget _buildContent() {
-    final p = _profile;
-    if (p == null) {
-      return Center(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(Icons.business_outlined, size: 72, color: Colors.grey.shade300),
-            const SizedBox(height: 16),
-            Text('No clinic info found',
-                style: TextStyle(color: Colors.grey.shade600, fontSize: 16)),
-            const SizedBox(height: 6),
-            Text('Complete your profile to add clinic details.',
-                textAlign: TextAlign.center,
-                style: TextStyle(color: Colors.grey.shade400, fontSize: 13)),
-          ],
-        ),
-      );
-    }
+// ─── Clinic Card ─────────────────────────────────────────────────────────────
 
-    final clinicName = p['clinic_name'] ?? p['hospital_name'] ?? '';
-    final clinicAddress = p['clinic_address'] ?? p['address'] ?? '';
-    final clinicCity = p['city'] ?? '';
-    final clinicState = p['state'] ?? '';
-    final clinicPhone = p['clinic_phone'] ?? p['clinic_contact'] ?? '';
-    final offlineFee = p['offline_fee'] ?? p['consultation_fee'];
-    final onlineFee = p['online_fee'];
-    final consultStart = p['consultation_start_time'];
-    final consultEnd = p['consultation_end_time'];
-    final consultDays = p['consultation_days'];
-    final slotDuration = p['slot_duration'];
-    final maxPatients = p['max_patients_per_day'];
+class _ClinicCard extends StatelessWidget {
+  final dynamic clinic;
+  final int index;
 
-    return SingleChildScrollView(
-      padding: const EdgeInsets.all(16),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // Clinic card
-          Card(
-            elevation: 3,
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-            child: Container(
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(16),
-                gradient: LinearGradient(
-                  colors: [AppConstants.primaryColor, AppConstants.primaryColor.withBlue(160)],
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                ),
-              ),
-              padding: const EdgeInsets.all(20),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    children: [
-                      Container(
-                        padding: const EdgeInsets.all(10),
-                        decoration: BoxDecoration(
-                          color: Colors.white.withOpacity(0.15),
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        child: const Icon(Icons.business, color: Colors.white, size: 28),
-                      ),
-                      const SizedBox(width: 14),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              clinicName.isNotEmpty ? clinicName : 'My Clinic',
-                              style: const TextStyle(
-                                  fontSize: 18, fontWeight: FontWeight.bold, color: Colors.white),
-                            ),
-                            if (clinicCity.isNotEmpty || clinicState.isNotEmpty)
-                              Text(
-                                [clinicCity, clinicState].where((s) => s.isNotEmpty).join(', '),
-                                style: const TextStyle(color: Colors.white70, fontSize: 13),
-                              ),
-                          ],
-                        ),
-                      ),
-                    ],
-                  ),
-                  if (clinicAddress.isNotEmpty) ...[
-                    const SizedBox(height: 12),
-                    Row(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        const Icon(Icons.location_on, color: Colors.white70, size: 16),
-                        const SizedBox(width: 6),
-                        Expanded(
-                          child: Text(clinicAddress,
-                              style: const TextStyle(color: Colors.white70, fontSize: 13)),
-                        ),
-                      ],
-                    ),
-                  ],
-                  if (clinicPhone.isNotEmpty) ...[
-                    const SizedBox(height: 6),
-                    Row(
-                      children: [
-                        const Icon(Icons.phone, color: Colors.white70, size: 16),
-                        const SizedBox(width: 6),
-                        Text(clinicPhone,
-                            style: const TextStyle(color: Colors.white70, fontSize: 13)),
-                      ],
-                    ),
-                  ],
-                ],
-              ),
-            ),
-          ),
+  const _ClinicCard({required this.clinic, required this.index});
 
-          const SizedBox(height: 20),
+  @override
+  Widget build(BuildContext context) {
+    final c = clinic is Map ? clinic as Map<String, dynamic> : <String, dynamic>{};
+    final name = c['clinic_name'] ?? c['name'] ?? 'Clinic ${index + 1}';
+    final address = c['address'] ?? c['full_address'] ?? '';
+    final city = c['city'] ?? '';
+    final state = c['state'] ?? '';
+    final pincode = c['pincode'] ?? c['zip'] ?? '';
+    final phone = c['phone'] ?? c['clinic_phone'] ?? '';
+    final fullAddress = [address, city, state, pincode].where((s) => s.toString().isNotEmpty).join(', ');
 
-          // Consultation Hours
-          _sectionTitle('Consultation Hours', Icons.schedule),
-          const SizedBox(height: 10),
-          Card(
-            elevation: 2,
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
-            child: Padding(
-              padding: const EdgeInsets.all(16),
-              child: Column(
-                children: [
-                  _infoRow(Icons.access_time, 'Start Time',
-                      _formatTime(consultStart?.toString())),
-                  _infoRow(Icons.access_time_filled, 'End Time',
-                      _formatTime(consultEnd?.toString())),
-                  if (consultDays != null)
-                    _infoRow(Icons.calendar_view_week, 'Working Days',
-                        consultDays.toString()),
-                  if (slotDuration != null)
-                    _infoRow(Icons.timer_outlined, 'Slot Duration',
-                        '\$slotDuration mins'),
-                  if (maxPatients != null)
-                    _infoRow(Icons.people_outline, 'Max Patients/Day',
-                        maxPatients.toString()),
-                ],
-              ),
-            ),
-          ),
-
-          const SizedBox(height: 20),
-
-          // Fees
-          _sectionTitle('Consultation Fees', Icons.currency_rupee),
-          const SizedBox(height: 10),
-          Row(
-            children: [
-              Expanded(
-                child: _feeCard(
-                  label: 'In-clinic Fee',
-                  amount: offlineFee,
-                  icon: Icons.local_hospital,
-                  color: AppConstants.primaryColor,
-                ),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: _feeCard(
-                  label: 'Online Fee',
-                  amount: onlineFee,
-                  icon: Icons.videocam,
-                  color: Colors.blue,
-                ),
-              ),
-            ],
-          ),
-
-          const SizedBox(height: 24),
-
-          // Info note
-          Container(
-            padding: const EdgeInsets.all(14),
-            decoration: BoxDecoration(
-              color: AppConstants.primaryColor.withOpacity(0.06),
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(
-                  color: AppConstants.primaryColor.withOpacity(0.2)),
-            ),
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Icon(Icons.info_outline,
-                    color: AppConstants.primaryColor, size: 18),
-                const SizedBox(width: 10),
-                const Expanded(
-                  child: Text(
-                    'To update clinic details, visit My Profile and edit your clinic information.',
-                    style: TextStyle(fontSize: 13, color: AppConstants.primaryColor),
-                  ),
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(height: 16),
-        ],
-      ),
-    );
-  }
-
-  Widget _sectionTitle(String title, IconData icon) {
-    return Row(
-      children: [
-        Icon(icon, size: 18, color: AppConstants.primaryColor),
-        const SizedBox(width: 8),
-        Text(title,
-            style: const TextStyle(
-                fontSize: 15,
-                fontWeight: FontWeight.bold,
-                color: AppConstants.primaryColor)),
-      ],
-    );
-  }
-
-  Widget _infoRow(IconData icon, String label, String value) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 12),
-      child: Row(
-        children: [
-          Icon(icon, size: 16, color: Colors.grey.shade400),
-          const SizedBox(width: 10),
-          SizedBox(
-            width: 120,
-            child: Text(label,
-                style: TextStyle(
-                    fontSize: 13,
-                    color: Colors.grey.shade500,
-                    fontWeight: FontWeight.w500)),
-          ),
-          Expanded(
-            child: Text(value,
-                style: const TextStyle(
-                    fontSize: 14,
-                    fontWeight: FontWeight.w600,
-                    color: AppConstants.textPrimaryColor)),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _feeCard({
-    required String label,
-    required dynamic amount,
-    required IconData icon,
-    required Color color,
-  }) {
     return Card(
       elevation: 2,
+      margin: const EdgeInsets.only(bottom: 12),
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
       child: Padding(
         padding: const EdgeInsets.all(16),
         child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Icon(icon, color: color, size: 28),
-            const SizedBox(height: 8),
-            Text(
-              amount != null ? '₹\${amount.toString()}' : '—',
-              style: TextStyle(
-                  fontSize: 22,
-                  fontWeight: FontWeight.bold,
-                  color: color),
+            Row(
+              children: [
+                Container(
+                  width: 42,
+                  height: 42,
+                  decoration: BoxDecoration(
+                    color: AppConstants.primaryColor.withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  child: Center(
+                    child: Text('${index + 1}', style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: AppConstants.primaryColor)),
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Text(name, style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w700)),
+                ),
+              ],
             ),
-            const SizedBox(height: 4),
-            Text(label,
-                textAlign: TextAlign.center,
-                style: TextStyle(
-                    fontSize: 12, color: Colors.grey.shade500)),
+            if (fullAddress.isNotEmpty) ...[
+              const SizedBox(height: 10),
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Icon(Icons.location_on_outlined, size: 15, color: Colors.grey.shade500),
+                  const SizedBox(width: 6),
+                  Expanded(child: Text(fullAddress, style: TextStyle(fontSize: 13, color: Colors.grey.shade700))),
+                ],
+              ),
+            ],
+            if (phone.isNotEmpty) ...[
+              const SizedBox(height: 6),
+              Row(
+                children: [
+                  Icon(Icons.phone_outlined, size: 14, color: Colors.grey.shade500),
+                  const SizedBox(width: 6),
+                  Text(phone.toString(), style: TextStyle(fontSize: 13, color: Colors.grey.shade700)),
+                ],
+              ),
+            ],
           ],
         ),
       ),

@@ -32,8 +32,7 @@ class DoctorDashboardScreen extends StatelessWidget {
             tooltip: 'My Profile',
             onPressed: () => Navigator.push(
               context,
-              MaterialPageRoute(
-                  builder: (_) => const DoctorProfileScreen()),
+              MaterialPageRoute(builder: (_) => const DoctorProfileScreen()),
             ),
           ),
           IconButton(
@@ -51,16 +50,12 @@ class DoctorDashboardScreen extends StatelessWidget {
               // Welcome card
               Card(
                 elevation: 4,
-                shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(16)),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
                 child: Container(
                   decoration: BoxDecoration(
                     borderRadius: BorderRadius.circular(16),
                     gradient: LinearGradient(
-                      colors: [
-                        AppConstants.primaryColor,
-                        AppConstants.primaryColor.withBlue(160),
-                      ],
+                      colors: [AppConstants.primaryColor, AppConstants.primaryColor.withBlue(160)],
                       begin: Alignment.topLeft,
                       end: Alignment.bottomRight,
                     ),
@@ -71,18 +66,14 @@ class DoctorDashboardScreen extends StatelessWidget {
                       GestureDetector(
                         onTap: () => Navigator.push(
                           context,
-                          MaterialPageRoute(
-                              builder: (_) => const DoctorProfileScreen()),
+                          MaterialPageRoute(builder: (_) => const DoctorProfileScreen()),
                         ),
                         child: CircleAvatar(
                           radius: 32,
                           backgroundColor: Colors.white.withOpacity(0.2),
                           child: Text(
                             name.isNotEmpty ? name[0].toUpperCase() : 'D',
-                            style: const TextStyle(
-                                fontSize: 26,
-                                fontWeight: FontWeight.bold,
-                                color: Colors.white),
+                            style: const TextStyle(fontSize: 26, fontWeight: FontWeight.bold, color: Colors.white),
                           ),
                         ),
                       ),
@@ -93,16 +84,12 @@ class DoctorDashboardScreen extends StatelessWidget {
                           children: [
                             Text(
                               'Dr. $name',
-                              style: const TextStyle(
-                                  fontSize: 20,
-                                  fontWeight: FontWeight.bold,
-                                  color: Colors.white),
+                              style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Colors.white),
                             ),
                             const SizedBox(height: 4),
                             const Text(
                               'Manage your patients & appointments',
-                              style: TextStyle(
-                                  fontSize: 13, color: Colors.white70),
+                              style: TextStyle(fontSize: 13, color: Colors.white70),
                             ),
                           ],
                         ),
@@ -114,9 +101,7 @@ class DoctorDashboardScreen extends StatelessWidget {
               const SizedBox(height: 20),
               const Padding(
                 padding: EdgeInsets.only(left: 4, bottom: 10),
-                child: Text('Quick Access',
-                    style: TextStyle(
-                        fontSize: 16, fontWeight: FontWeight.w600)),
+                child: Text('Quick Access', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600)),
               ),
               GridView.count(
                 shrinkWrap: true,
@@ -133,8 +118,7 @@ class DoctorDashboardScreen extends StatelessWidget {
                     color: Colors.blue,
                     onTap: () => Navigator.push(
                       context,
-                      MaterialPageRoute(
-                          builder: (_) => const AppointmentsScreen()),
+                      MaterialPageRoute(builder: (_) => const AppointmentsScreen()),
                     ),
                   ),
                   _buildFeatureCard(
@@ -144,8 +128,7 @@ class DoctorDashboardScreen extends StatelessWidget {
                     color: Colors.green,
                     onTap: () => Navigator.push(
                       context,
-                      MaterialPageRoute(
-                          builder: (_) => const DoctorPatientsScreen()),
+                      MaterialPageRoute(builder: (_) => const DoctorPatientsScreen()),
                     ),
                   ),
                   _buildFeatureCard(
@@ -155,8 +138,7 @@ class DoctorDashboardScreen extends StatelessWidget {
                     color: Colors.purple,
                     onTap: () => Navigator.push(
                       context,
-                      MaterialPageRoute(
-                          builder: (_) => const XrayAnalysisScreen()),
+                      MaterialPageRoute(builder: (_) => const XrayAnalysisScreen()),
                     ),
                   ),
                   _buildFeatureCard(
@@ -166,8 +148,7 @@ class DoctorDashboardScreen extends StatelessWidget {
                     color: Colors.teal,
                     onTap: () => Navigator.push(
                       context,
-                      MaterialPageRoute(
-                          builder: (_) => const DoctorClinicsScreen()),
+                      MaterialPageRoute(builder: (_) => const DoctorClinicsScreen()),
                     ),
                   ),
                   _buildFeatureCard(
@@ -177,8 +158,7 @@ class DoctorDashboardScreen extends StatelessWidget {
                     color: Colors.orange,
                     onTap: () => Navigator.push(
                       context,
-                      MaterialPageRoute(
-                          builder: (_) => const DoctorPatientsScreen()),
+                      MaterialPageRoute(builder: (_) => const DoctorPatientsScreen()),
                     ),
                   ),
                   _buildFeatureCard(
@@ -188,8 +168,7 @@ class DoctorDashboardScreen extends StatelessWidget {
                     color: Colors.indigo,
                     onTap: () => Navigator.push(
                       context,
-                      MaterialPageRoute(
-                          builder: (_) => const DoctorProfileScreen()),
+                      MaterialPageRoute(builder: (_) => const DoctorProfileScreen()),
                     ),
                   ),
                 ],
@@ -211,8 +190,7 @@ class DoctorDashboardScreen extends StatelessWidget {
   }) {
     return Card(
       elevation: 2,
-      shape:
-          RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
       child: InkWell(
         onTap: onTap,
         borderRadius: BorderRadius.circular(14),
@@ -233,8 +211,7 @@ class DoctorDashboardScreen extends StatelessWidget {
               Text(
                 title,
                 textAlign: TextAlign.center,
-                style: const TextStyle(
-                    fontSize: 13, fontWeight: FontWeight.w600),
+                style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
               ),
             ],
           ),
@@ -250,14 +227,8 @@ class DoctorDashboardScreen extends StatelessWidget {
         title: const Text('Logout'),
         content: const Text('Are you sure you want to logout?'),
         actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context, false),
-            child: const Text('Cancel'),
-          ),
-          TextButton(
-            onPressed: () => Navigator.pop(context, true),
-            child: const Text('Logout'),
-          ),
+          TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('Cancel')),
+          TextButton(onPressed: () => Navigator.pop(context, true), child: const Text('Logout')),
         ],
       ),
     );

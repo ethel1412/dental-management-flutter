@@ -13,7 +13,8 @@ class LabServicesScreen extends StatefulWidget {
 }
 
 class _LabServicesScreenState extends State<LabServicesScreen> {
-  Map<String, dynamic>? _profile;
+  Map<String, dynamic>? _labProfile;
+  List<dynamic> _services = [];
   bool _isLoading = true;
   String? _error;
 
@@ -31,21 +32,23 @@ class _LabServicesScreenState extends State<LabServicesScreen> {
       final response = await http.get(
         Uri.parse('${ApiConfig.baseUrl}${ApiConfig.labProfile}'),
         headers: {
-          'Authorization': 'Bearer \$token',
+          'Authorization': 'Bearer $token',
           'Content-Type': 'application/json',
         },
       );
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
+        final profile = data['lab'] ?? data['profile'] ?? data;
         setState(() {
-          _profile = data is Map ? data['lab'] ?? data : null;
+          _labProfile = profile as Map<String, dynamic>?;
+          _services = profile['services'] ?? profile['service_types'] ?? profile['tests_offered'] ?? [];
           _isLoading = false;
         });
       } else {
         setState(() { _error = 'Failed to load services'; _isLoading = false; });
       }
-    } catch (_) {
-      setState(() { _error = 'Network error.'; _isLoading = false; });
+    } catch (e) {
+      setState(() { _error = 'Network error. Please check your connection.'; _isLoading = false; });
     }
   }
 
@@ -58,19 +61,115 @@ class _LabServicesScreenState extends State<LabServicesScreen> {
         backgroundColor: AppConstants.accentColor,
         foregroundColor: Colors.white,
         elevation: 0,
-        actions: [
-          IconButton(icon: const Icon(Icons.refresh), onPressed: _fetchProfile),
-        ],
+        actions: [IconButton(icon: const Icon(Icons.refresh), onPressed: _fetchProfile)],
       ),
       body: _isLoading
-          ? const Center(
-              child: CircularProgressIndicator(
-                valueColor: AlwaysStoppedAnimation<Color>(AppConstants.accentColor),
-              ),
-            )
+          ? const Center(child: CircularProgressIndicator(valueColor: AlwaysStoppedAnimation<Color>(AppConstants.accentColor)))
           : _error != null
               ? _buildError()
-              : _buildContent(),
+              : RefreshIndicator(
+                  onRefresh: _fetchProfile,
+                  color: AppConstants.accentColor,
+                  child: ListView(
+                    padding: const EdgeInsets.all(16),
+                    children: [
+                      if (_labProfile != null) _buildLabSummary(),
+                      const SizedBox(height: 16),
+                      Row(
+                        children: [
+                          const Icon(Icons.science_outlined, size: 18, color: AppConstants.accentColor),
+                          const SizedBox(width: 8),
+                          Text(
+                            'Services Offered (${_services.length})',
+                            style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w700, color: AppConstants.accentColor),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 12),
+                      if (_services.isEmpty)
+                        _buildNoServices()
+                      else
+                        ..._services.asMap().entries.map((e) => _ServiceCard(service: e.value, index: e.key)),
+                    ],
+                  ),
+                ),
+    );
+  }
+
+  Widget _buildLabSummary() {
+    final p = _labProfile!;
+    final name = p['lab_name'] ?? p['name'] ?? 'Lab';
+    final city = p['city'] ?? '';
+    final state = p['state'] ?? '';
+    final location = [city, state].where((s) => s.isNotEmpty).join(', ');
+    final isActive = p['is_active'] ?? p['active'] ?? true;
+
+    return Card(
+      elevation: 3,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      child: Container(
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(16),
+          gradient: LinearGradient(
+            colors: [AppConstants.accentColor, AppConstants.accentColor.withGreen(120)],
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+          ),
+        ),
+        padding: const EdgeInsets.all(18),
+        child: Row(
+          children: [
+            CircleAvatar(
+              radius: 28,
+              backgroundColor: Colors.white.withOpacity(0.2),
+              child: Text(
+                name.isNotEmpty ? name[0].toUpperCase() : 'L',
+                style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: Colors.white),
+              ),
+            ),
+            const SizedBox(width: 14),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(name, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.white)),
+                  if (location.isNotEmpty)
+                    Text(location, style: const TextStyle(fontSize: 12, color: Colors.white70)),
+                  const SizedBox(height: 4),
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                    decoration: BoxDecoration(
+                      color: Colors.white.withOpacity(0.18),
+                      borderRadius: BorderRadius.circular(20),
+                    ),
+                    child: Text(
+                      isActive == true ? 'Active' : 'Inactive',
+                      style: const TextStyle(fontSize: 11, color: Colors.white, fontWeight: FontWeight.w500),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildNoServices() {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: 32),
+        child: Column(
+          children: [
+            Icon(Icons.science_outlined, size: 64, color: Colors.grey.shade300),
+            const SizedBox(height: 12),
+            Text('No services listed', style: TextStyle(color: Colors.grey.shade600, fontSize: 15, fontWeight: FontWeight.w600)),
+            const SizedBox(height: 6),
+            Text('Update your lab profile to add services and tests offered.', textAlign: TextAlign.center, style: TextStyle(color: Colors.grey.shade400, fontSize: 13)),
+          ],
+        ),
+      ),
     );
   }
 
@@ -83,12 +182,9 @@ class _LabServicesScreenState extends State<LabServicesScreen> {
           children: [
             Icon(Icons.wifi_off_rounded, size: 64, color: Colors.grey.shade400),
             const SizedBox(height: 16),
-            Text('Could not load services',
-                style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600,
-                    color: Colors.grey.shade700)),
+            Text('Could not load services', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600, color: Colors.grey.shade700)),
             const SizedBox(height: 6),
-            Text(_error!, textAlign: TextAlign.center,
-                style: TextStyle(fontSize: 13, color: Colors.grey.shade500)),
+            Text(_error!, textAlign: TextAlign.center, style: TextStyle(fontSize: 13, color: Colors.grey.shade500)),
             const SizedBox(height: 20),
             ElevatedButton.icon(
               onPressed: _fetchProfile,
@@ -105,268 +201,108 @@ class _LabServicesScreenState extends State<LabServicesScreen> {
       ),
     );
   }
+}
 
-  Widget _buildContent() {
-    final p = _profile;
-    if (p == null) {
-      return Center(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(Icons.settings_outlined, size: 72, color: Colors.grey.shade300),
-            const SizedBox(height: 16),
-            Text('No service info found',
-                style: TextStyle(color: Colors.grey.shade600, fontSize: 16)),
-            const SizedBox(height: 6),
-            Text('Update your lab profile to list your services.',
-                textAlign: TextAlign.center,
-                style: TextStyle(color: Colors.grey.shade400, fontSize: 13)),
-          ],
+// ─── Service Card ─────────────────────────────────────────────────────────────
+
+class _ServiceCard extends StatelessWidget {
+  final dynamic service;
+  final int index;
+
+  const _ServiceCard({required this.service, required this.index});
+
+  @override
+  Widget build(BuildContext context) {
+    // Service can be a string or a Map
+    if (service is String) {
+      return Card(
+        elevation: 1,
+        margin: const EdgeInsets.only(bottom: 10),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        child: ListTile(
+          leading: Container(
+            width: 36, height: 36,
+            decoration: BoxDecoration(
+              color: AppConstants.accentColor.withOpacity(0.1),
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: Center(
+              child: Text('${index + 1}', style: const TextStyle(fontWeight: FontWeight.bold, color: AppConstants.accentColor)),
+            ),
+          ),
+          title: Text(service.toString(), style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w500)),
         ),
       );
     }
 
-    // Extract services list — could be array or comma-separated string
-    final rawServices = p['services'] ?? p['test_types'] ?? p['service_types'] ?? [];
-    List<String> services = [];
-    if (rawServices is List) {
-      services = rawServices.map((s) => s.toString()).toList();
-    } else if (rawServices is String && rawServices.isNotEmpty) {
-      services = rawServices.split(',').map((s) => s.trim()).toList();
-    }
+    final s = service as Map<String, dynamic>;
+    final name = s['service_name'] ?? s['name'] ?? s['test_name'] ?? 'Service ${index + 1}';
+    final desc = s['description'] ?? s['desc'] ?? '';
+    final price = s['price'] ?? s['cost'] ?? s['fee'] ?? '';
+    final duration = s['duration'] ?? s['turnaround_time'] ?? '';
+    final available = s['is_available'] ?? s['available'] ?? true;
 
-    final labName = p['lab_name'] ?? p['name'] ?? 'My Lab';
-    final labType = p['lab_type'] ?? p['type'] ?? '';
-    final city = p['city'] ?? '';
-    final turnaround = p['turnaround_time'] ?? p['tat'] ?? '';
-    final homeCollection = p['home_collection'] ?? p['home_sample_collection'];
-    final onlineReports = p['online_reports'] ?? p['digital_reports'];
-    final pickupAvailable = p['pickup_available'] ?? p['sample_pickup'];
-    final accreditation = p['accreditation'] ?? p['certifications'] ?? '';
-
-    return SingleChildScrollView(
-      padding: const EdgeInsets.all(16),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // Lab header card
-          Card(
-            elevation: 3,
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-            child: Container(
+    return Card(
+      elevation: 2,
+      margin: const EdgeInsets.only(bottom: 12),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+      child: Padding(
+        padding: const EdgeInsets.all(14),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Container(
+              width: 42, height: 42,
               decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(16),
-                gradient: LinearGradient(
-                  colors: [AppConstants.accentColor, AppConstants.accentColor.withGreen(120)],
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                ),
+                color: AppConstants.accentColor.withOpacity(0.1),
+                borderRadius: BorderRadius.circular(10),
               ),
-              padding: const EdgeInsets.all(20),
-              child: Row(
+              child: const Icon(Icons.science_outlined, color: AppConstants.accentColor, size: 22),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Container(
-                    padding: const EdgeInsets.all(12),
-                    decoration: BoxDecoration(
-                      color: Colors.white.withOpacity(0.15),
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: const Icon(Icons.biotech, color: Colors.white, size: 30),
+                  Row(
+                    children: [
+                      Expanded(child: Text(name.toString(), style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w700))),
+                      if (available == false)
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                          decoration: BoxDecoration(
+                            color: Colors.red.withOpacity(0.1),
+                            borderRadius: BorderRadius.circular(20),
+                            border: Border.all(color: Colors.red.withOpacity(0.4)),
+                          ),
+                          child: const Text('Unavailable', style: TextStyle(fontSize: 10, color: Colors.red, fontWeight: FontWeight.bold)),
+                        ),
+                    ],
                   ),
-                  const SizedBox(width: 14),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(labName,
-                            style: const TextStyle(
-                                fontSize: 18,
-                                fontWeight: FontWeight.bold,
-                                color: Colors.white)),
-                        if (labType.isNotEmpty)
-                          Text(labType,
-                              style: const TextStyle(
-                                  color: Colors.white70, fontSize: 13)),
-                        if (city.isNotEmpty)
-                          Text(city,
-                              style: const TextStyle(
-                                  color: Colors.white60, fontSize: 12)),
+                  if (desc.toString().isNotEmpty) ...[
+                    const SizedBox(height: 4),
+                    Text(desc.toString(), style: TextStyle(fontSize: 12, color: Colors.grey.shade600), maxLines: 2, overflow: TextOverflow.ellipsis),
+                  ],
+                  const SizedBox(height: 6),
+                  Row(
+                    children: [
+                      if (price.toString().isNotEmpty) ...[
+                        Icon(Icons.currency_rupee, size: 13, color: Colors.grey.shade500),
+                        Text('₹$price', style: TextStyle(fontSize: 12, color: Colors.grey.shade700, fontWeight: FontWeight.w600)),
+                        const SizedBox(width: 12),
                       ],
-                    ),
+                      if (duration.toString().isNotEmpty) ...[
+                        Icon(Icons.schedule_outlined, size: 13, color: Colors.grey.shade500),
+                        const SizedBox(width: 3),
+                        Text(duration.toString(), style: TextStyle(fontSize: 12, color: Colors.grey.shade600)),
+                      ],
+                    ],
                   ),
                 ],
               ),
             ),
-          ),
-
-          const SizedBox(height: 20),
-
-          // Feature badges
-          _sectionTitle('Capabilities', Icons.verified_outlined),
-          const SizedBox(height: 10),
-          Wrap(
-            spacing: 10,
-            runSpacing: 10,
-            children: [
-              if (homeCollection == true || homeCollection == 1 ||
-                  homeCollection?.toString() == 'true')
-                _badge('Home Collection', Icons.home_outlined, Colors.green),
-              if (onlineReports == true || onlineReports == 1 ||
-                  onlineReports?.toString() == 'true')
-                _badge('Online Reports', Icons.picture_as_pdf_outlined, Colors.blue),
-              if (pickupAvailable == true || pickupAvailable == 1 ||
-                  pickupAvailable?.toString() == 'true')
-                _badge('Sample Pickup', Icons.local_shipping_outlined,
-                    Colors.orange),
-              if (turnaround.isNotEmpty)
-                _badge('TAT: \$turnaround', Icons.timer_outlined, Colors.purple),
-              if (accreditation.isNotEmpty)
-                _badge(accreditation.toString(), Icons.workspace_premium_outlined,
-                    AppConstants.accentColor),
-            ],
-          ),
-
-          const SizedBox(height: 20),
-
-          // Services list
-          _sectionTitle('Services Offered', Icons.science_outlined),
-          const SizedBox(height: 10),
-
-          services.isEmpty
-              ? Container(
-                  width: double.infinity,
-                  padding: const EdgeInsets.all(20),
-                  decoration: BoxDecoration(
-                    color: Colors.grey.shade50,
-                    borderRadius: BorderRadius.circular(14),
-                    border: Border.all(color: Colors.grey.shade200),
-                  ),
-                  child: Column(
-                    children: [
-                      Icon(Icons.list_alt_outlined,
-                          size: 40, color: Colors.grey.shade300),
-                      const SizedBox(height: 10),
-                      Text('No services listed yet.',
-                          style: TextStyle(
-                              color: Colors.grey.shade500, fontSize: 14)),
-                      const SizedBox(height: 4),
-                      Text('Update your lab profile to add the tests and services you offer.',
-                          textAlign: TextAlign.center,
-                          style: TextStyle(
-                              color: Colors.grey.shade400, fontSize: 12)),
-                    ],
-                  ),
-                )
-              : Card(
-                  elevation: 2,
-                  shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(14)),
-                  child: Column(
-                    children: services.asMap().entries.map((e) {
-                      final i = e.key;
-                      final s = e.value;
-                      return Container(
-                        decoration: BoxDecoration(
-                          color: i.isEven ? Colors.transparent : Colors.grey.shade50,
-                          border: i == 0
-                              ? null
-                              : Border(
-                                  top: BorderSide(color: Colors.grey.shade100)),
-                        ),
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: 16, vertical: 12),
-                        child: Row(
-                          children: [
-                            Container(
-                              width: 28,
-                              height: 28,
-                              alignment: Alignment.center,
-                              decoration: BoxDecoration(
-                                color: AppConstants.accentColor.withOpacity(0.1),
-                                shape: BoxShape.circle,
-                              ),
-                              child: Text('\${i + 1}',
-                                  style: const TextStyle(
-                                      fontSize: 12,
-                                      fontWeight: FontWeight.bold,
-                                      color: AppConstants.accentColor)),
-                            ),
-                            const SizedBox(width: 12),
-                            Expanded(
-                              child: Text(s,
-                                  style: const TextStyle(
-                                      fontSize: 14,
-                                      color: AppConstants.textPrimaryColor)),
-                            ),
-                            Icon(Icons.check_circle,
-                                size: 16,
-                                color: Colors.green.shade400),
-                          ],
-                        ),
-                      );
-                    }).toList(),
-                  ),
-                ),
-
-          const SizedBox(height: 20),
-          Container(
-            padding: const EdgeInsets.all(14),
-            decoration: BoxDecoration(
-              color: AppConstants.accentColor.withOpacity(0.06),
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: AppConstants.accentColor.withOpacity(0.2)),
-            ),
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Icon(Icons.info_outline, color: AppConstants.accentColor, size: 18),
-                const SizedBox(width: 10),
-                const Expanded(
-                  child: Text(
-                    'To update your services and capabilities, go to My Profile and edit your lab information.',
-                    style: TextStyle(fontSize: 13, color: AppConstants.accentColor),
-                  ),
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(height: 16),
-        ],
-      ),
-    );
-  }
-
-  Widget _sectionTitle(String title, IconData icon) {
-    return Row(
-      children: [
-        Icon(icon, size: 18, color: AppConstants.accentColor),
-        const SizedBox(width: 8),
-        Text(title,
-            style: const TextStyle(
-                fontSize: 15,
-                fontWeight: FontWeight.bold,
-                color: AppConstants.accentColor)),
-      ],
-    );
-  }
-
-  Widget _badge(String label, IconData icon, Color color) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-      decoration: BoxDecoration(
-        color: color.withOpacity(0.1),
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: color.withOpacity(0.3)),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(icon, size: 14, color: color),
-          const SizedBox(width: 6),
-          Text(label,
-              style: TextStyle(
-                  fontSize: 13, color: color, fontWeight: FontWeight.w600)),
-        ],
+          ],
+        ),
       ),
     );
   }

@@ -14,8 +14,8 @@ class DoctorPatientsScreen extends StatefulWidget {
 }
 
 class _DoctorPatientsScreenState extends State<DoctorPatientsScreen> {
-  List<dynamic> _patients = [];
-  List<dynamic> _filtered = [];
+  List<Map<String, dynamic>> _patients = [];
+  List<Map<String, dynamic>> _filtered = [];
   bool _isLoading = true;
   String? _error;
   final _searchCtrl = TextEditingController();
@@ -38,31 +38,28 @@ class _DoctorPatientsScreenState extends State<DoctorPatientsScreen> {
     try {
       final prefs = await SharedPreferences.getInstance();
       final token = prefs.getString(AppConstants.keyToken);
-      // Get appointments and extract unique patients
       final response = await http.get(
-        Uri.parse('${ApiConfig.baseUrl}${ApiConfig.appointments}?per_page=500'),
+        Uri.parse('${ApiConfig.baseUrl}${ApiConfig.appointments}?per_page=200'),
         headers: {
-          'Authorization': 'Bearer \$token',
+          'Authorization': 'Bearer $token',
           'Content-Type': 'application/json',
         },
       );
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
-        final appts = data is List ? data : (data['appointments'] ?? []);
-        // Extract unique patients from appointments
-        final Map<String, dynamic> seen = {};
+        final List appts = data is List ? data : (data['appointments'] ?? []);
+        // Deduplicate patients by patient_id
+        final Map<String, Map<String, dynamic>> seen = {};
         for (final a in appts) {
           final patient = a['patient'] as Map<String, dynamic>?;
-          if (patient != null) {
-            final id = patient['patient_id']?.toString() ??
-                patient['id']?.toString() ?? '';
-            if (id.isNotEmpty && !seen.containsKey(id)) {
-              seen[id] = {
-                ...patient,
-                '_last_visit': a['appointment_date'],
-                '_last_reason': a['reason'],
-              };
-            }
+          if (patient == null) continue;
+          final id = (patient['patient_id'] ?? patient['id'] ?? '').toString();
+          if (id.isNotEmpty && !seen.containsKey(id)) {
+            seen[id] = {
+              ...patient,
+              'last_appointment_date': a['appointment_date'],
+              'last_appointment_id': a['appointment_id'],
+            };
           }
         }
         setState(() {
@@ -73,19 +70,19 @@ class _DoctorPatientsScreenState extends State<DoctorPatientsScreen> {
       } else {
         setState(() { _error = 'Failed to load patients'; _isLoading = false; });
       }
-    } catch (_) {
+    } catch (e) {
       setState(() { _error = 'Network error. Please check your connection.'; _isLoading = false; });
     }
   }
 
   void _applySearch() {
-    final q = _searchCtrl.text.toLowerCase();
+    final q = _searchCtrl.text.trim().toLowerCase();
     setState(() {
       _filtered = q.isEmpty
           ? _patients
           : _patients.where((p) {
-              final name = (p['full_name'] ?? p['name'] ?? '').toLowerCase();
-              final phone = (p['phone'] ?? p['mobile'] ?? '').toLowerCase();
+              final name = (p['full_name'] ?? p['name'] ?? '').toString().toLowerCase();
+              final phone = (p['phone'] ?? p['mobile'] ?? '').toString().toLowerCase();
               return name.contains(q) || phone.contains(q);
             }).toList();
     });
@@ -129,23 +126,37 @@ class _DoctorPatientsScreenState extends State<DoctorPatientsScreen> {
                   borderRadius: BorderRadius.circular(12),
                   borderSide: BorderSide.none,
                 ),
-                contentPadding: const EdgeInsets.symmetric(vertical: 0, horizontal: 16),
+                contentPadding: const EdgeInsets.symmetric(vertical: 0),
               ),
             ),
           ),
-          // Body
           Expanded(
             child: _isLoading
-                ? const Center(
-                    child: CircularProgressIndicator(
-                      valueColor: AlwaysStoppedAnimation<Color>(AppConstants.primaryColor),
-                    ),
-                  )
+                ? const Center(child: CircularProgressIndicator(valueColor: AlwaysStoppedAnimation<Color>(AppConstants.primaryColor)))
                 : _error != null
                     ? _buildError()
                     : _filtered.isEmpty
                         ? _buildEmpty()
-                        : _buildList(),
+                        : RefreshIndicator(
+                            onRefresh: _fetchPatients,
+                            color: AppConstants.primaryColor,
+                            child: ListView.builder(
+                              padding: const EdgeInsets.all(16),
+                              itemCount: _filtered.length,
+                              itemBuilder: (_, i) => _PatientCard(
+                                patient: _filtered[i],
+                                onViewRecords: () => Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (_) => ClinicalProfileScreen(
+                                      patientId: (_filtered[i]['patient_id'] ?? _filtered[i]['id'] ?? '').toString(),
+                                      patientName: (_filtered[i]['full_name'] ?? _filtered[i]['name'] ?? 'Patient').toString(),
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ),
           ),
         ],
       ),
@@ -164,8 +175,7 @@ class _DoctorPatientsScreenState extends State<DoctorPatientsScreen> {
             Text('Could not load patients',
                 style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600, color: Colors.grey.shade700)),
             const SizedBox(height: 6),
-            Text(_error!, textAlign: TextAlign.center,
-                style: TextStyle(fontSize: 13, color: Colors.grey.shade500)),
+            Text(_error!, textAlign: TextAlign.center, style: TextStyle(fontSize: 13, color: Colors.grey.shade500)),
             const SizedBox(height: 20),
             ElevatedButton.icon(
               onPressed: _fetchPatients,
@@ -191,14 +201,14 @@ class _DoctorPatientsScreenState extends State<DoctorPatientsScreen> {
           Icon(Icons.people_outline, size: 72, color: Colors.grey.shade300),
           const SizedBox(height: 16),
           Text(
-            _searchCtrl.text.isEmpty ? 'No patients yet' : 'No patients match your search',
+            _searchCtrl.text.isNotEmpty ? 'No patients match your search' : 'No patients yet',
             style: TextStyle(color: Colors.grey.shade600, fontSize: 16, fontWeight: FontWeight.w600),
           ),
           const SizedBox(height: 6),
           Text(
-            _searchCtrl.text.isEmpty
-                ? 'Patients who book appointments with you will appear here.'
-                : 'Try a different name or phone number.',
+            _searchCtrl.text.isNotEmpty
+                ? 'Try a different name or phone number'
+                : 'Patients from your appointments will appear here',
             textAlign: TextAlign.center,
             style: TextStyle(color: Colors.grey.shade400, fontSize: 13),
           ),
@@ -206,117 +216,84 @@ class _DoctorPatientsScreenState extends State<DoctorPatientsScreen> {
       ),
     );
   }
-
-  Widget _buildList() {
-    return RefreshIndicator(
-      onRefresh: _fetchPatients,
-      color: AppConstants.primaryColor,
-      child: ListView.builder(
-        padding: const EdgeInsets.all(16),
-        itemCount: _filtered.length,
-        itemBuilder: (_, i) => _PatientCard(patient: _filtered[i]),
-      ),
-    );
-  }
 }
 
-// ─── Patient Card ─────────────────────────────────────────────────────────────
+// ─── Patient Card ────────────────────────────────────────────────────────────
 
 class _PatientCard extends StatelessWidget {
   final Map<String, dynamic> patient;
-  const _PatientCard({required this.patient});
+  final VoidCallback onViewRecords;
 
-  String get _name => patient['full_name'] ?? patient['name'] ?? 'Patient';
-  String get _phone => patient['phone'] ?? patient['mobile'] ?? '';
-  String get _email => patient['email'] ?? '';
-  String get _lastVisit => patient['_last_visit'] ?? '';
-  String get _patientId =>
-      patient['patient_id']?.toString() ?? patient['id']?.toString() ?? '';
-
-  String _initials() {
-    final parts = _name.trim().split(' ');
-    if (parts.length >= 2) return '${parts[0][0]}${parts[1][0]}'.toUpperCase();
-    return _name.isNotEmpty ? _name[0].toUpperCase() : 'P';
-  }
+  const _PatientCard({required this.patient, required this.onViewRecords});
 
   @override
   Widget build(BuildContext context) {
+    final name = patient['full_name'] ?? patient['name'] ?? 'Patient';
+    final phone = patient['phone'] ?? patient['mobile'] ?? '';
+    final email = patient['email'] ?? '';
+    final gender = patient['gender'] ?? '';
+    final age = patient['age']?.toString() ?? patient['date_of_birth'] ?? '';
+    final lastAppt = patient['last_appointment_date'] ?? '';
+
     return Card(
       elevation: 2,
       margin: const EdgeInsets.only(bottom: 12),
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
-      child: InkWell(
-        borderRadius: BorderRadius.circular(14),
-        onTap: _patientId.isNotEmpty
-            ? () => Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (_) => ClinicalProfileScreen(
-                      patientId: _patientId,
-                      patientName: _name,
-                    ),
-                  ),
-                )
-            : null,
-        child: Padding(
-          padding: const EdgeInsets.all(16),
-          child: Row(
-            children: [
-              CircleAvatar(
-                radius: 26,
-                backgroundColor: AppConstants.primaryColor.withOpacity(0.12),
-                child: Text(_initials(),
-                    style: const TextStyle(
-                        fontWeight: FontWeight.bold,
-                        color: AppConstants.primaryColor,
-                        fontSize: 16)),
+      child: Padding(
+        padding: const EdgeInsets.all(14),
+        child: Row(
+          children: [
+            CircleAvatar(
+              radius: 26,
+              backgroundColor: AppConstants.primaryColor.withOpacity(0.12),
+              child: Text(
+                name.isNotEmpty ? name[0].toUpperCase() : 'P',
+                style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 20, color: AppConstants.primaryColor),
               ),
-              const SizedBox(width: 14),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(_name,
-                        style: const TextStyle(
-                            fontWeight: FontWeight.w700, fontSize: 15)),
-                    if (_phone.isNotEmpty)
-                      Row(
-                        children: [
-                          Icon(Icons.phone_outlined,
-                              size: 13, color: Colors.grey.shade500),
-                          const SizedBox(width: 4),
-                          Text(_phone,
-                              style: TextStyle(
-                                  fontSize: 13, color: Colors.grey.shade600)),
-                        ],
-                      ),
-                    if (_email.isNotEmpty)
-                      Row(
-                        children: [
-                          Icon(Icons.email_outlined,
-                              size: 13, color: Colors.grey.shade500),
-                          const SizedBox(width: 4),
-                          Expanded(
-                            child: Text(_email,
-                                style: TextStyle(
-                                    fontSize: 13, color: Colors.grey.shade600),
-                                overflow: TextOverflow.ellipsis),
-                          ),
-                        ],
-                      ),
-                    if (_lastVisit.isNotEmpty)
-                      Text('Last visit: $_lastVisit',
-                          style: TextStyle(
-                              fontSize: 11,
-                              color: Colors.grey.shade400,
-                              fontStyle: FontStyle.italic)),
-                  ],
-                ),
+            ),
+            const SizedBox(width: 14),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(name, style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 15)),
+                  const SizedBox(height: 3),
+                  if (phone.isNotEmpty)
+                    _info(Icons.phone_outlined, phone),
+                  if (email.isNotEmpty)
+                    _info(Icons.email_outlined, email),
+                  if (gender.isNotEmpty || age.isNotEmpty)
+                    _info(Icons.person_outline, [gender, age].where((s) => s.isNotEmpty).join(' • ')),
+                  if (lastAppt.isNotEmpty)
+                    _info(Icons.calendar_today_outlined, 'Last visit: $lastAppt'),
+                ],
               ),
-              Icon(Icons.chevron_right, color: Colors.grey.shade400),
-            ],
-          ),
+            ),
+            IconButton(
+              icon: const Icon(Icons.medical_information_outlined, color: AppConstants.primaryColor),
+              tooltip: 'Clinical Records',
+              onPressed: onViewRecords,
+            ),
+          ],
         ),
+      ),
+    );
+  }
+
+  Widget _info(IconData icon, String text) {
+    return Padding(
+      padding: const EdgeInsets.only(top: 3),
+      child: Row(
+        children: [
+          Icon(icon, size: 13, color: Colors.grey.shade500),
+          const SizedBox(width: 5),
+          Expanded(
+            child: Text(text,
+                style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis),
+          ),
+        ],
       ),
     );
   }
