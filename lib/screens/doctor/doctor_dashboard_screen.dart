@@ -1,6 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:http/http.dart' as http;
+import 'dart:convert';
 import '../../providers/auth_provider.dart';
+import '../../services/storage_service.dart';
+import '../../config/api_config.dart';
 import '../../utils/constants.dart';
 import '../auth/login_screen.dart';
 import 'appointments_screen.dart';
@@ -9,16 +13,57 @@ import 'xray_analysis_screen.dart';
 import 'doctor_patients_screen.dart';
 import 'doctor_clinics_screen.dart';
 
-class DoctorDashboardScreen extends StatelessWidget {
+class DoctorDashboardScreen extends StatefulWidget {
   const DoctorDashboardScreen({super.key});
 
   @override
-  Widget build(BuildContext context) {
-    final userData = context.watch<AuthProvider>().userData;
-    final name = userData?['name'] as String? ??
-        userData?['full_name'] as String? ??
-        'Doctor';
+  State<DoctorDashboardScreen> createState() => _DoctorDashboardScreenState();
+}
 
+class _DoctorDashboardScreenState extends State<DoctorDashboardScreen> {
+  String _doctorName = 'Doctor';
+  bool _nameLoaded = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadDoctorName();
+  }
+
+  Future<void> _loadDoctorName() async {
+    try {
+      final storage = StorageService();
+      final token = await storage.getToken();
+      if (token == null) return;
+
+      final uri = Uri.parse('${ApiConfig.baseUrl}${ApiConfig.doctorProfile}');
+      final response = await http.get(uri, headers: {
+        'Authorization': 'Bearer $token',
+        'Content-Type': 'application/json',
+      }).timeout(const Duration(seconds: 30));
+
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        final name = data['full_name']?.toString() ?? '';
+        if (name.isNotEmpty && mounted) {
+          setState(() {
+            _doctorName = name;
+            _nameLoaded = true;
+          });
+        }
+      }
+    } catch (_) {
+      // Fallback: try AuthProvider userData
+      if (!mounted) return;
+      final userData = context.read<AuthProvider>().userData;
+      final fallback = userData?['full_name']?.toString() ??
+          userData?['name']?.toString() ?? 'Doctor';
+      setState(() { _doctorName = fallback; _nameLoaded = true; });
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: const Color(0xFFF8F9FF),
       appBar: AppBar(
@@ -30,10 +75,14 @@ class DoctorDashboardScreen extends StatelessWidget {
           IconButton(
             icon: const Icon(Icons.person_outline),
             tooltip: 'My Profile',
-            onPressed: () => Navigator.push(
-              context,
-              MaterialPageRoute(builder: (_) => const DoctorProfileScreen()),
-            ),
+            onPressed: () async {
+              await Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => const DoctorProfileScreen()),
+              );
+              // Refresh name in case it was edited
+              _loadDoctorName();
+            },
           ),
           IconButton(
             icon: const Icon(Icons.logout),
@@ -50,12 +99,16 @@ class DoctorDashboardScreen extends StatelessWidget {
               // Welcome card
               Card(
                 elevation: 4,
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(16)),
                 child: Container(
                   decoration: BoxDecoration(
                     borderRadius: BorderRadius.circular(16),
                     gradient: LinearGradient(
-                      colors: [AppConstants.primaryColor, AppConstants.primaryColor.withBlue(160)],
+                      colors: [
+                        AppConstants.primaryColor,
+                        AppConstants.primaryColor.withBlue(160)
+                      ],
                       begin: Alignment.topLeft,
                       end: Alignment.bottomRight,
                     ),
@@ -66,15 +119,26 @@ class DoctorDashboardScreen extends StatelessWidget {
                       GestureDetector(
                         onTap: () => Navigator.push(
                           context,
-                          MaterialPageRoute(builder: (_) => const DoctorProfileScreen()),
+                          MaterialPageRoute(
+                              builder: (_) => const DoctorProfileScreen()),
                         ),
                         child: CircleAvatar(
                           radius: 32,
                           backgroundColor: Colors.white.withOpacity(0.2),
-                          child: Text(
-                            name.isNotEmpty ? name[0].toUpperCase() : 'D',
-                            style: const TextStyle(fontSize: 26, fontWeight: FontWeight.bold, color: Colors.white),
-                          ),
+                          child: _nameLoaded
+                              ? Text(
+                                  _doctorName[0].toUpperCase(),
+                                  style: const TextStyle(
+                                      fontSize: 26,
+                                      fontWeight: FontWeight.bold,
+                                      color: Colors.white),
+                                )
+                              : const SizedBox(
+                                  width: 22,
+                                  height: 22,
+                                  child: CircularProgressIndicator(
+                                      color: Colors.white, strokeWidth: 2),
+                                ),
                         ),
                       ),
                       const SizedBox(width: 16),
@@ -83,13 +147,17 @@ class DoctorDashboardScreen extends StatelessWidget {
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(
-                              'Dr. $name',
-                              style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Colors.white),
+                              'Dr. $_doctorName',
+                              style: const TextStyle(
+                                  fontSize: 20,
+                                  fontWeight: FontWeight.bold,
+                                  color: Colors.white),
                             ),
                             const SizedBox(height: 4),
                             const Text(
                               'Manage your patients & appointments',
-                              style: TextStyle(fontSize: 13, color: Colors.white70),
+                              style:
+                                  TextStyle(fontSize: 13, color: Colors.white70),
                             ),
                           ],
                         ),
@@ -101,7 +169,9 @@ class DoctorDashboardScreen extends StatelessWidget {
               const SizedBox(height: 20),
               const Padding(
                 padding: EdgeInsets.only(left: 4, bottom: 10),
-                child: Text('Quick Access', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600)),
+                child: Text('Quick Access',
+                    style: TextStyle(
+                        fontSize: 16, fontWeight: FontWeight.w600)),
               ),
               GridView.count(
                 shrinkWrap: true,
@@ -118,7 +188,8 @@ class DoctorDashboardScreen extends StatelessWidget {
                     color: Colors.blue,
                     onTap: () => Navigator.push(
                       context,
-                      MaterialPageRoute(builder: (_) => const AppointmentsScreen()),
+                      MaterialPageRoute(
+                          builder: (_) => const AppointmentsScreen()),
                     ),
                   ),
                   _buildFeatureCard(
@@ -128,7 +199,8 @@ class DoctorDashboardScreen extends StatelessWidget {
                     color: Colors.green,
                     onTap: () => Navigator.push(
                       context,
-                      MaterialPageRoute(builder: (_) => const DoctorPatientsScreen()),
+                      MaterialPageRoute(
+                          builder: (_) => const DoctorPatientsScreen()),
                     ),
                   ),
                   _buildFeatureCard(
@@ -138,7 +210,8 @@ class DoctorDashboardScreen extends StatelessWidget {
                     color: Colors.purple,
                     onTap: () => Navigator.push(
                       context,
-                      MaterialPageRoute(builder: (_) => const XrayAnalysisScreen()),
+                      MaterialPageRoute(
+                          builder: (_) => const XrayAnalysisScreen()),
                     ),
                   ),
                   _buildFeatureCard(
@@ -148,7 +221,8 @@ class DoctorDashboardScreen extends StatelessWidget {
                     color: Colors.teal,
                     onTap: () => Navigator.push(
                       context,
-                      MaterialPageRoute(builder: (_) => const DoctorClinicsScreen()),
+                      MaterialPageRoute(
+                          builder: (_) => const DoctorClinicsScreen()),
                     ),
                   ),
                   _buildFeatureCard(
@@ -158,7 +232,8 @@ class DoctorDashboardScreen extends StatelessWidget {
                     color: Colors.orange,
                     onTap: () => Navigator.push(
                       context,
-                      MaterialPageRoute(builder: (_) => const DoctorPatientsScreen()),
+                      MaterialPageRoute(
+                          builder: (_) => const DoctorPatientsScreen()),
                     ),
                   ),
                   _buildFeatureCard(
@@ -166,10 +241,14 @@ class DoctorDashboardScreen extends StatelessWidget {
                     icon: Icons.person,
                     title: 'My Profile',
                     color: Colors.indigo,
-                    onTap: () => Navigator.push(
-                      context,
-                      MaterialPageRoute(builder: (_) => const DoctorProfileScreen()),
-                    ),
+                    onTap: () async {
+                      await Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                            builder: (_) => const DoctorProfileScreen()),
+                      );
+                      _loadDoctorName();
+                    },
                   ),
                 ],
               ),
@@ -190,7 +269,8 @@ class DoctorDashboardScreen extends StatelessWidget {
   }) {
     return Card(
       elevation: 2,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+      shape:
+          RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
       child: InkWell(
         onTap: onTap,
         borderRadius: BorderRadius.circular(14),
@@ -211,7 +291,8 @@ class DoctorDashboardScreen extends StatelessWidget {
               Text(
                 title,
                 textAlign: TextAlign.center,
-                style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
+                style: const TextStyle(
+                    fontSize: 13, fontWeight: FontWeight.w600),
               ),
             ],
           ),
@@ -227,8 +308,12 @@ class DoctorDashboardScreen extends StatelessWidget {
         title: const Text('Logout'),
         content: const Text('Are you sure you want to logout?'),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('Cancel')),
-          TextButton(onPressed: () => Navigator.pop(context, true), child: const Text('Logout')),
+          TextButton(
+              onPressed: () => Navigator.pop(context, false),
+              child: const Text('Cancel')),
+          TextButton(
+              onPressed: () => Navigator.pop(context, true),
+              child: const Text('Logout')),
         ],
       ),
     );
