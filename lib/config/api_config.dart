@@ -1,7 +1,5 @@
 class ApiConfig {
-  // Base URL - Change this to your computer's IP when testing on real device
-  static const String baseUrl = 'http://10.0.2.2:8000'; // For Android Emulator
-  // static const String baseUrl = 'http://192.168.1.XXX:8000'; // For Real Device
+  static const String baseUrl = 'https://dental-management-api-hjeh.onrender.com';
 
   // API Endpoints
   static const String authRegister = '/api/auth/register';
