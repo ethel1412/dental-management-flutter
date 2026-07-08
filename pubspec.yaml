@@ -1,5 +1,5 @@
-name: dental_management_app
-description: Dental practice management app with ML-powered X-ray analysis
+name: scan_my_tooth
+description: AI-powered dental X-ray analysis and clinic management
 publish_to: 'none'
 version: 1.0.0+1
 
@@ -62,6 +62,14 @@ dev_dependencies:
     sdk: flutter
   flutter_lints: ^6.0.0
   flutter_launcher_icons: ^0.14.1
+
+flutter_launcher_icons:
+  android: true
+  ios: true
+  image_path: "assets/icons/app_icon.png"
+  min_sdk_android: 21
+  adaptive_icon_background: "#EAF6FB"
+  adaptive_icon_foreground: "assets/icons/app_icon.png"
 
 flutter:
   uses-material-design: true
